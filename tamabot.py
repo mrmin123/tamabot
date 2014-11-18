@@ -19,7 +19,7 @@ processed_submissions = deque([])
 processed_comments = deque([])
 processed_submissions_file = 'processed_submissions.txt'
 processed_comments_file = 'processed_comments.txt'
-signature = "\n^Processing... ^(auto-delete ^on ^comment ^score ^below ^0) ^|| ^Use ^with ^[Iconify](http://tamadra.github.io/iconify/) ^|| ^[FAQ/Source](http://google.com/)"
+signature = "\n^Processing... ^(auto-delete ^on ^comment ^score ^below ^0) ^|| ^Use ^with ^[Iconify](http://tamadra.github.io/iconify/) ^|| ^[Source/contact](https://github.com/mrmin123/tamabot/)"
 signature_add = "^Parent ^commentor ^can ^[delete](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___ID___) ^this ^post"
 pattern_icon = ur'\[(?:\\\[.+?\] )?\]\((?:#m)?\/(\d+) ?\"?([^\"]+)??\"?\)'
 pattern_flair_call = ur'id (?:is )?(?:in )?(?:my )?flair'
