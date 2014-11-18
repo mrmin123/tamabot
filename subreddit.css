@@ -1,0 +1,30 @@
+.comment .md h5+h6+h4+table tbody {
+    display: none;
+}
+
+.comment .md h5+h6+h4+table thead:hover + tbody,
+.comment .md h5+h6+h4+table tbody:hover {
+    display: table-row-group;
+    font-size: 9pt;
+}
+
+.comment .md h5+h6+h4+table tbody tr:nth-child(3n-2) td {
+    background-color: #f5f5f5;
+    border: none;
+    font-size: 11pt;
+}
+
+.comment .md h5+h6+h4+table tbody tr:nth-child(3n-1) td,
+.comment .md table tbody tr:nth-child(3n) td {
+    background-color: #ffffff;
+    border: none;
+}
+
+.comment .md h5+h6+h4+table,
+.comment .md table h5+h6+h4+thead th {
+    border: none;
+}
+
+.comment .md h5+h6+h4+table tbody tr:nth-child(3n-2) td a {
+    font-size: 11pt;
+}
