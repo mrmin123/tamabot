@@ -18,4 +18,4 @@ tamabot
 * [PRAW](https://praw.readthedocs.org/)
 
 ##Contact
-Please PM [/u/mrmin123](http://www.reddit.com/message/compose?to=mrmin123&subject=tamabot) about any inquiries or feedback about tamabot.
+Please PM [/u/mrmin123](http://www.reddit.com/message/compose?to=mrmin123&subject=tamabot) regarding any inquiries or feedback on tamabot.
