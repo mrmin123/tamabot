@@ -11,7 +11,6 @@ user_agent = ("rPuzzlesAndDragonsBot 1.0 by /u/mrmin123")
 LIMIT = 10
 SLEEP = 3
 SLEEP_LONG = 5
-SLEEP_UBER = 1000
 mod_list = []
 padx_storage = {}
 processed_monsters = deque([])
@@ -236,7 +235,7 @@ def create_post(post, msg, post_type, msg_type):
             sig_temp = signature_add.replace('___ID___', str(c.id))
             time.sleep(SLEEP)
             r.get_info(thing_id='t1_' + str(c.id)).edit(c.body.replace('^Processing...', sig_temp))
-            time.sleep(SLEEP_UBER)
+            time.sleep(SLEEP)
     except Exception as e:
         log_error(e)
 
