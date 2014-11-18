@@ -92,7 +92,7 @@ def table_output(padx, msg):
     uses PADX data to build reddit post output; automatically creates a new post
     if the # of chars > 10000 (reddit limit); automatically apends bot signature
     """
-    table_header = "||Monster Table ___MTABLE___ [hover to view]|\n:--:|:--\n"
+    table_header = "##### &#009;\n###### &#009;\n#### &#009;\n||Monster Table ___MTABLE___ [hover to view]|\n:--:|:--\n"
     if len(msg) == 0:
         msg.append(table_header)
     i = len(msg) - 1
