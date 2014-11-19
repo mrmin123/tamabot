@@ -18,8 +18,8 @@ processed_submissions = deque([])
 processed_comments = deque([])
 processed_submissions_file = 'processed_submissions.txt'
 processed_comments_file = 'processed_comments.txt'
-intro = "^This ^bot ^posts ^information ^from ^PADX ^for ^iconified ^monsters, ^as ^well ^as ^IDs ^from ^user ^flairs. ^For ^more ^information, ^visit ^the ^[Github page](https://github.com/mrmin123/tamabot/).\n"
-signature = "\n^Processing... ^(auto-delete ^on ^comment ^score ^below ^0) ^|| ^Use ^with ^[Iconify](http://tamadra.com/iconify) ^|| ^[Source/contact](https://github.com/mrmin123/tamabot/)"
+intro = "^This ^bot ^posts ^information ^from ^PADX ^for ^iconified ^monsters, ^as ^well ^as ^IDs ^from ^user ^flairs. ^For ^more ^information, ^read ^the ^[Github](https://github.com/mrmin123/tamabot/) ^page.\n"
+signature = "\n^Processing... ^|| ^Auto-delete ^on ^comment ^score ^below ^0 ^|| ^Use ^with ^[Iconify](http://tamadra.com/iconify) ^|| ^[Source/contact](https://github.com/mrmin123/tamabot/)"
 signature_add = "^Parent ^commentor ^can ^[delete](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___ID___) ^this ^post"
 pattern_icon = ur'\[(?:\\\[.+?\] )?\]\((?:#m)?\/(\d+) ?\"?([^\"]+)??\"?\)'
 pattern_flair_call = ur'id (?:is )?(?:in )?(?:my )?flair'
@@ -96,16 +96,16 @@ def table_output(padx, msg):
     if len(msg) == 0:
         msg.append(table_header)
     i = len(msg) - 1
-    msg_temp = "[](/%s \"%s\")|" % (padx.id, padx.name)
-    msg_temp = "%s%s. **[%s](http://www.puzzledragonx.com/en/monster.asp?n=%s)**\n" % (msg_temp, padx.id, padx.name, padx.id)
+    msg_temp = "[](/%s \"%s\")|" % (padx.id, padx.name.decode('utf-8'))
+    msg_temp = "%s%s. **[%s](http://www.puzzledragonx.com/en/monster.asp?n=%s)**\n" % (msg_temp, padx.id, padx.name.decode('utf-8'), padx.id)
     if padx.ls_id != '0':
-        msg_temp = "%s |Leader: **[%s](http://www.puzzledragonx.com/en/leaderskill.asp?s=%s)**: %s\n" % (msg_temp.encode('utf-8'), padx.ls_name, padx.ls_id, padx.ls_text)
+        msg_temp = "%s |Leader: **[%s](http://www.puzzledragonx.com/en/leaderskill.asp?s=%s)**: %s\n" % (msg_temp, padx.ls_name.decode('utf-8'), padx.ls_id, padx.ls_text.decode('utf-8'))
     else:
-        msg_temp = "%s |Leader: **%s**\n" % (msg_temp.encode('utf-8'), padx.ls_name)
+        msg_temp = "%s |Leader: **%s**\n" % (msg_temp, padx.ls_name)
     if padx.as_id != '0':
-        msg_temp = "%s |Active: **[%s](http://www.puzzledragonx.com/en/skill.asp?s=%s)**: %s (%s)\n" % (msg_temp, padx.as_name, padx.as_id, padx.as_text, padx.acd_text)
+        msg_temp = "%s |Active: **[%s](http://www.puzzledragonx.com/en/skill.asp?s=%s)**: %s (%s)\n" % (msg_temp, padx.as_name.decode('utf-8'), padx.as_id, padx.as_text.decode('utf-8'), padx.acd_text)
     else:
-        msg_temp = "%s |Active: **%s**\n" % (msg_temp.encode('utf-8'), padx.as_name)
+        msg_temp = "%s |Active: **%s**\n" % (msg_temp, padx.as_name)
 
     if len(msg[i]) + len(msg_temp) + len(signature) > 9999:
         msg.append(table_header)
@@ -235,8 +235,10 @@ def create_post(post, msg, post_type, msg_type):
                 log_msg("Made a %s reply in %s" % (msg_type, post.permalink))
             sig_temp = signature_add.replace('___ID___', str(c.id))
             time.sleep(SLEEP)
-            r.get_info(thing_id='t1_' + str(c.id)).edit(c.body.replace('^Processing...', sig_temp))
-            time.sleep(SLEEP)
+            m_tmp = c.body.replace('^Processing...', sig_temp)
+            m_tmp = m_tmp.replace('&amp;#', '&#')
+            r.get_info(thing_id='t1_' + str(c.id)).edit(m_tmp)
+            time.sleep(SLEEP_LONG)
     except Exception as e:
         log_error(e)
 
