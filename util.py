@@ -5,10 +5,8 @@ def check_processed_posts(processed_list, id, limit):
     checks and maintains list of processed submissions and replies
     """
     if id not in processed_list:
-        log_msg("%s not in list" % id)
         processed_list.append(id)
         if len(processed_list) > limit:
-            log_msg("queue long; popping")
             processed_list.popleft()
 
 def read_queue_file(file, queue):
