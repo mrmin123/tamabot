@@ -18,7 +18,8 @@ processed_submissions = deque([])
 processed_comments = deque([])
 processed_submissions_file = 'processed_submissions.txt'
 processed_comments_file = 'processed_comments.txt'
-signature = "\n^Processing... ^(auto-delete ^on ^comment ^score ^below ^0) ^|| ^Use ^with ^[Iconify](http://tamadra.github.io/iconify/) ^|| ^[Source/contact](https://github.com/mrmin123/tamabot/)"
+intro = "^This ^bot ^posts ^information ^from ^PADX ^for ^iconified ^monsters, ^as ^well ^as ^IDs ^from ^user ^flairs. ^For ^more ^information, ^visit ^the ^[Github page](https://github.com/mrmin123/tamabot/).\n"
+signature = "\n^Processing... ^(auto-delete ^on ^comment ^score ^below ^0) ^|| ^Use ^with ^[Iconify](http://tamadra.com/iconify) ^|| ^[Source/contact](https://github.com/mrmin123/tamabot/)"
 signature_add = "^Parent ^commentor ^can ^[delete](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___ID___) ^this ^post"
 pattern_icon = ur'\[(?:\\\[.+?\] )?\]\((?:#m)?\/(\d+) ?\"?([^\"]+)??\"?\)'
 pattern_flair_call = ur'id (?:is )?(?:in )?(?:my )?flair'
@@ -91,7 +92,7 @@ def table_output(padx, msg):
     uses PADX data to build reddit post output; automatically creates a new post
     if the # of chars > 10000 (reddit limit); automatically apends bot signature
     """
-    table_header = "##### &#009;\n###### &#009;\n#### &#009;\n||Monster Table ___MTABLE___ [hover to view]|\n:--:|:--\n"
+    table_header = "%s##### &#009;\n###### &#009;\n#### &#009;\n||Expanded Monster Information ___MTABLE___ [hover to view]|\n:--:|:--\n" % intro
     if len(msg) == 0:
         msg.append(table_header)
     i = len(msg) - 1
@@ -163,7 +164,7 @@ def check_posts(posts, post_type):
             msg = []
             m2 = re.search(pattern_flair_user, str(post.author_flair_text), re.I | re.U)
             if m2:
-                msg.append("Found %s's ID in flair: %s%s%s\n" % (str(post.author), m2.group(1), m2.group(2), m2.group(3)))
+                msg.append("%sFound %s's ID in flair: %s%s%s\n" % (intro, str(post.author), m2.group(1), m2.group(2), m2.group(3)))
                 create_post(post, msg, post_type, 'FLAIR ID')
 
         # update processed posts list
