@@ -3,9 +3,9 @@ tamabot
 [/r/PuzzleAndDragons](http://www.reddit.com/r/PuzzleAndDragons) helper bot
 
 ##Features
-* Finds posts with [Iconified](http://tamadra.github.io/iconify/) monster icons (even ones not yet supported by subreddit styles), grab relevant monster information from [PADX](http://www.puzzledragonx.com/), and posts a reply with the information in a table
-* Automatically breaks up monster table posts into chunks if they become too long
-* Monster table is 'hover-to-view' to be less intrusive
+* Finds posts with [Iconified](http://tamadra.com/iconify) monster icons (even ones not yet supported by subreddit styles), grab relevant monster information from [PADX](http://www.puzzledragonx.com/), and posts a reply with the information in a table
+* Automatically breaks up expanded monster information table posts into chunks if they become too long
+* Monster table is 'hover-to-view' to be less intrusive via subreddit CSS
 * Finds 'ID in flair'-type posts, grabs the ID from user's flair, and replies with ID (for mobile users)
 * Bot posts will automatically delete on comment score below 0
 * Parent commenter has ability to delete via PM to bot
