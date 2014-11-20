@@ -6,7 +6,7 @@ def check_processed_posts(processed_list, id, limit):
     """
     if id not in processed_list:
         processed_list.append(id)
-        if len(processed_list) > limit:
+        if len(processed_list) > (limit * 2):
             processed_list.popleft()
 
 def read_queue_file(file, queue):
