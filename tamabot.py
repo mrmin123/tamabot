@@ -8,9 +8,9 @@ from collections import deque
 user_agent = ("rPuzzlesAndDragonsBot 1.0 by /u/mrmin123")
 
 # globals
-LIMIT = 10
+LIMIT = 15
 SLEEP = 3
-SLEEP_LONG = 5
+SLEEP_LONG = 15
 mod_list = []
 padx_storage = {}
 processed_monsters = deque([])
@@ -108,6 +108,7 @@ def table_output(padx, msg):
         msg_temp = "%s |Active: **%s**\n" % (msg_temp, padx.as_name)
 
     if len(msg[i]) + len(msg_temp) + len(signature) > 9999:
+        log_msg("message long... splitting")
         msg.append(table_header)
         msg[i + 1] = msg[i + 1] + msg_temp
     else:
@@ -164,7 +165,7 @@ def check_posts(posts, post_type):
             msg = []
             m2 = re.search(pattern_flair_user, str(post.author_flair_text), re.I | re.U)
             if m2:
-                msg.append("%sFound %s's ID in flair: %s%s%s\n" % (intro, str(post.author), m2.group(1), m2.group(2), m2.group(3)))
+                msg.append("%s\nFound %s's ID in flair: %s%s%s\n" % (intro, str(post.author), m2.group(1), m2.group(2), m2.group(3)))
                 create_post(post, msg, post_type, 'FLAIR ID')
 
         # update processed posts list
@@ -203,7 +204,7 @@ def check_pm(msgs):
             if msg.author.name == c_parent.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123' :
                 delete_post(c, 'PM')
             else:
-                log_warning("Incorrect delete request from /u/%s for %s" % (msg.author.name, m.group[1]))
+                log_warning("Incorrect delete request from %s for %s" % (msg.author.name, m.group(1)))
 
         # check for moderator halt request
         if msg.author.name in mod_list or msg.author.name == 'mrmin123':
@@ -239,6 +240,7 @@ def create_post(post, msg, post_type, msg_type):
             m_tmp = m_tmp.replace('&amp;#', '&#')
             r.get_info(thing_id='t1_' + str(c.id)).edit(m_tmp)
             time.sleep(SLEEP_LONG)
+
     except Exception as e:
         log_error(e)
 
@@ -296,6 +298,7 @@ except Exception as e:
 # begin primary bot loop
 RUNNING = True
 while RUNNING:
+    log_msg('loop')
     # update moderators list every so often
     if (loop + 10000) % 10000 == 0:
         get_mods(SUBREDDIT)
