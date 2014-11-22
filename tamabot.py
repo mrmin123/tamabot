@@ -47,12 +47,12 @@ class PADXData():
         while self.REQUESTING:
             try:
                 self.html = requests.get("http://www.puzzledragonx.com/en/monster.asp?n=%s" % self.id).content
-                if self.name == '':
-                    m = re.search(self.pattern_name, self.html, re.I | re.U)
-                    if m:
-                        self.name = m.group(1)
-                    else:
-                        self.name = "Monster ID (%s)" % self.id
+                m = re.search(self.pattern_name, self.html, re.I | re.U)
+                if m:
+                    self.name = m.group(1)
+                else:
+                    if self.name == '':
+                        self.name = "Monster #%s" % self.id
                 self.get_ls()
                 self.get_as()
                 self.get_acd()
@@ -165,7 +165,7 @@ def check_posts(posts, post_type):
             msg = []
             m2 = re.search(pattern_flair_user, str(post.author_flair_text), re.I | re.U)
             if m2:
-                msg.append("%s\nFound %s's ID in flair: %s%s%s\n" % (intro, str(post.author), m2.group(1), m2.group(2), m2.group(3)))
+                msg.append("%s\nFound %s's ID in flair: %s,%s,%s\n" % (intro, str(post.author), m2.group(1), m2.group(2), m2.group(3)))
                 create_post(post, msg, post_type, 'FLAIR ID')
 
         # update processed posts list
@@ -298,27 +298,32 @@ except Exception as e:
 # begin primary bot loop
 RUNNING = True
 while RUNNING:
-    log_msg('loop')
-    # update moderators list every so often
-    if (loop + 10000) % 10000 == 0:
-        get_mods(SUBREDDIT)
-    loop = loop + 1
+    try:
+        # update moderators list every so often
+        if (loop + 10000) % 10000 == 0:
+            get_mods(SUBREDDIT)
+        loop = loop + 1
 
-    # check for -1 scores
-    bot_user = r.get_redditor(USERNAME)
-    check_self_posts(bot_user.get_comments(limit = None))
+        # check for -1 scores
+        bot_user = r.get_redditor(USERNAME)
+        check_self_posts(bot_user.get_comments(limit = None))
 
-    # check PMs for delete or halt requests
-    check_pm(r.get_unread(limit = None))
+        # check PMs for delete or halt requests
+        check_pm(r.get_unread(limit = None))
 
-    # check submissions/self posts
-    check_posts(sub.get_new(limit = LIMIT), 'SUBMISSIONS')
-    update_queue_file(processed_submissions_file, processed_submissions)
+        # check submissions/self posts
+        check_posts(sub.get_new(limit = LIMIT), 'SUBMISSIONS')
+        update_queue_file(processed_submissions_file, processed_submissions)
 
-    # check reply/comments
-    check_posts(sub.get_comments(limit = LIMIT), 'COMMENTS')
-    update_queue_file(processed_comments_file, processed_comments)
+        # check reply/comments
+        check_posts(sub.get_comments(limit = LIMIT), 'COMMENTS')
+        update_queue_file(processed_comments_file, processed_comments)
 
-    # clean up stored PADX data
-    while len(processed_monsters) > 200:
-        processed_monsters.popleft()
+        # clean up stored PADX data
+        while len(processed_monsters) > 200:
+            processed_monsters.popleft()
+    except requests.exceptions.HTTPError:
+        log_error("HTTP Error: Gateway timeout/Origin Down")
+        time.sleep(SLEEP_LONG)
+    except Exception as e:
+        log_error(e)
