@@ -1,30 +1,51 @@
+/* Monster Table */
+.comment .md h6+h4+h5+table tbody,
 .comment .md h5+h6+h4+table tbody {
     display: none;
 }
 
+.comment .md h6+h4+h5+table thead:hover + tbody,
+.comment .md h6+h4+h5+table tbody:hover,
 .comment .md h5+h6+h4+table thead:hover + tbody,
 .comment .md h5+h6+h4+table tbody:hover {
     display: table-row-group;
     font-size: 9pt;
 }
-
+.comment .md h6+h4+h5+table tbody tr:nth-child(4n-3) td,
 .comment .md h5+h6+h4+table tbody tr:nth-child(3n-2) td {
     background-color: #f5f5f5;
     border: none;
     font-size: 11pt;
 }
 
+.comment .md h6+h4+h5+table tbody tr:nth-child(4n-2) td,
+.comment .md h6+h4+h5+table tbody tr:nth-child(4n-1) td,
+.comment .md h6+h4+h5+table tbody tr:nth-child(4n) td,
 .comment .md h5+h6+h4+table tbody tr:nth-child(3n-1) td,
-.comment .md table tbody tr:nth-child(3n) td {
+.comment .md h5+h6+h4+table tbody tr:nth-child(3n) td {
     background-color: #ffffff;
     border: none;
 }
-
+.comment .md h6+h4+h5+table,
+.comment .md h6+h4+h5+table thead th,
 .comment .md h5+h6+h4+table,
-.comment .md table h5+h6+h4+thead th {
+.comment .md h5+h6+h4+table thead th {
     border: none;
 }
-
+.comment .md h6+h4+h5+table tbody tr:nth-child(4n-3) td a,
 .comment .md h5+h6+h4+table tbody tr:nth-child(3n-2) td a {
     font-size: 11pt;
+}
+
+.comment .md h6+h4+h5+table thead tr th:first-child {
+    width: 66px;
+}
+
+.comment .md h6+h4+h5+table thead tr th:nth-child(2) {
+    width: 50px;
+}
+
+/* Awoken-specific; dependent on Iconify subreddit CSS */
+a[href^="#i/awoken"]:after {
+    height:32px;width:31px;background:url(%%awoken%%)
 }
