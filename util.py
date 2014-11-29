@@ -6,8 +6,15 @@ def check_processed_posts(processed_list, id, limit):
     """
     if id not in processed_list:
         processed_list.append(id)
-        if len(processed_list) > (limit * 2):
+        if len(processed_list) > (limit * 3):
             processed_list.popleft()
+
+def check_ignored_submissions(list, id):
+    """
+    checks and maintains list of ignored submissions
+    """
+    if id not in list:
+        list.append(id)
 
 def read_queue_file(file, queue):
     """
