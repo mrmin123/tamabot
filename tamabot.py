@@ -30,9 +30,9 @@ pattern_flair_user = ur'(?<!\d)(\d{3})(?:[,. ])?(\d{3})(?:[,. ])?(\d{3})(?!\d)'
 loop = 0
 
 # read in processed queue files in case of script crash
+read_queue_file(ignored_submissions_file, ignored_submissions)
 read_queue_file(processed_submissions_file, processed_submissions)
 read_queue_file(processed_comments_file, processed_comments)
-read_queue_file(ignored_submissions_file, ignored_submissions)
 
 class PADXData():
     """
@@ -255,7 +255,7 @@ def check_pm(msgs):
             if msg.author.name == c.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123' :
                 check_ignored_submissions(ignored_submissions, m.group(1))
                 log_msg("Ignoring posts under %s by %s's request" % (m.group(1), msg.author.name))
-                temp_msg = "%sI am ignoring any new posts in this thread by OP/moderator's request! Please request this post to be deleted to un-ignore.\n" % intro
+                temp_msg = "%s\nI am ignoring any new posts in this thread by OP/moderator's request! Please request this post to be deleted to un-ignore.\n" % intro
                 create_post(c, [temp_msg], 'SUBMISSIONS', 'IGNORE')
             else:
                 log_warning("Incorrect ignore request from %s for %s" % (msg.author.name, m.group(1)))
@@ -365,6 +365,7 @@ while RUNNING:
 
         # check PMs for delete or halt requests
         check_pm(r.get_unread(limit = None))
+        update_queue_file(ignored_submissions_file, ignored_submissions)
 
         # check submissions/self posts
         check_posts(sub.get_new(limit = LIMIT), 'SUBMISSIONS')
