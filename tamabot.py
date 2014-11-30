@@ -274,7 +274,7 @@ def check_pm(msgs):
                 temp_type = 'COMMENTS'
                 id = id = "t1_%s" % m.group(1)
                 c = r.get_info(thing_id = id)
-            if c is not None and c.subreddit.display_name == SUBREDDIT.lower() and (msg.author.name == c.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123'):
+            if c is not None and c.subreddit.display_name.lower() == SUBREDDIT.lower() and (msg.author.name == c.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123'):
                 log_msg("Revisiting %s under %s's request" % (m.group(1), msg.author.name))
                 check_posts([c], temp_type, True)
             else:
