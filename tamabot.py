@@ -114,8 +114,8 @@ def table_output(padx, msg):
     if len(msg) == 0:
         msg.append(table_header)
     i = len(msg) - 1
-    sid = int((padx.id - 1) / 50)
-    cid = int((padx.id - 1) % 50)
+    sid = int(padx.id) / 50
+    cid = int(padx.id) % 50
     msg_temp = "[](#i/s%02d/c%02s/%s \"%s\")|" % (sid, cid, padx.id, padx.name.decode('utf-8'))
     msg_temp = "%s#%s|**[%s](http://www.puzzledragonx.com/en/monster.asp?n=%s)**\n" % (msg_temp, padx.id, padx.name.decode('utf-8'), padx.id)
     if padx.ls_id != '0':
@@ -142,7 +142,7 @@ def table_output(padx, msg):
         msg[i] = msg[i] + msg_temp
     return msg
 
-def check_posts(posts, post_type):
+def check_posts(posts, post_type, forced):
     """
     main function for checking submissions and replies made in subreddit; checks
     for iconified monster links and 'flair in ID' messages
@@ -153,16 +153,17 @@ def check_posts(posts, post_type):
             continue
 
         # check processed posts and ignore lists
-        if post_type == 'SUBMISSIONS':
-            if str(post.id) in processed_submissions:
-                continue
-            if str(post.id) in ignored_submissions:
-                continue
-        elif post_type == 'COMMENTS':
-            if str(post.id) in processed_comments:
-                continue
-            if str(post.link_id)[3:] in ignored_submissions:
-                continue
+        if forced is False:
+            if post_type == 'SUBMISSIONS':
+                if str(post.id) in processed_submissions:
+                    continue
+                if str(post.id) in ignored_submissions:
+                    continue
+            elif post_type == 'COMMENTS':
+                if str(post.id) in processed_comments:
+                    continue
+                if str(post.link_id)[3:] in ignored_submissions:
+                    continue
 
         # check for Monster Icons
         n, temp_id, msg, listed = 0, 0, [], []
@@ -236,29 +237,48 @@ def check_pm(msgs):
             id = "t1_%s" % m.group(1)
             c = r.get_info(thing_id = id)
             c_parent = r.get_info(thing_id = c.parent_id)
-            if msg.author.name == c_parent.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123':
-                if "Please request this post to be deleted to un-ignore." in c.body:
-                    log_msg("Un-ignoring posts under %s by %s's request" % (c.parent_id, msg.author.name))
-                    try:
-                        ignored_submissions.remove(str(c.parent_id)[3:])
-                    except Exception as e:
-                        log_error(e)
+            if c_parent.author is None:
                 delete_post(c, 'PM')
             else:
-                log_warning("Incorrect delete request from %s for %s" % (msg.author.name, m.group(1)))
+                if msg.author.name == c_parent.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123':
+                    if "Please request this post to be deleted to un-ignore." in c.body:
+                        log_msg("Un-ignoring posts under %s by %s's request" % (c.parent_id, msg.author.name))
+                        try:
+                            ignored_submissions.remove(str(c.parent_id)[3:])
+                        except Exception as e:
+                            log_error(e)
+                    delete_post(c, 'PM')
+                else:
+                    log_warning("Incorrect delete request from %s for %s" % (msg.author.name, m.group(1)))
 
         # check for ignore request
         m = re.search(ur'^\+ignore\s(.+?)$', msg.body.lower())
         if m:
             id = "t3_%s" % m.group(1)
             c = r.get_info(thing_id = id)
-            if msg.author.name == c.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123' :
+            if c_parent.author is not None and (msg.author.name == c.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123'):
                 check_ignored_submissions(ignored_submissions, m.group(1))
                 log_msg("Ignoring posts under %s by %s's request" % (m.group(1), msg.author.name))
                 temp_msg = "%s\nI am ignoring any new posts in this thread by OP/moderator's request! Please request this post to be deleted to un-ignore.\n" % intro
                 create_post(c, [temp_msg], 'SUBMISSIONS', 'IGNORE')
             else:
                 log_warning("Incorrect ignore request from %s for %s" % (msg.author.name, m.group(1)))
+
+        # check for revisit
+        m = re.search(ur'^\+visit\s(.+?)$', msg.body.lower())
+        if m:
+            temp_type = 'SUBMISSIONS'
+            id = "t3_%s" % m.group(1)
+            c = r.get_info(thing_id = id)
+            if c is None:
+                temp_type = 'COMMENTS'
+                id = id = "t1_%s" % m.group(1)
+                c = r.get_info(thing_id = id)
+            if c is not None and c.subreddit.display_name == SUBREDDIT.lower() and (msg.author.name == c.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123'):
+                log_msg("Revisiting %s under %s's request" % (m.group(1), msg.author.name))
+                check_posts([c], temp_type, True)
+            else:
+                log_msg("Incorrect revisit request for %s by %s" % (m.group(1), msg.author.name))
 
         # check for moderator halt request
         if msg.author.name in mod_list or msg.author.name == 'mrmin123':
@@ -368,11 +388,11 @@ while RUNNING:
         update_queue_file(ignored_submissions_file, ignored_submissions)
 
         # check submissions/self posts
-        check_posts(sub.get_new(limit = LIMIT), 'SUBMISSIONS')
+        check_posts(sub.get_new(limit = LIMIT), 'SUBMISSIONS', False)
         update_queue_file(processed_submissions_file, processed_submissions)
 
         # check reply/comments
-        check_posts(sub.get_comments(limit = LIMIT), 'COMMENTS')
+        check_posts(sub.get_comments(limit = LIMIT), 'COMMENTS', False)
         update_queue_file(processed_comments_file, processed_comments)
 
         # clean up stored PADX data
