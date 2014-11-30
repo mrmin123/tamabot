@@ -7,11 +7,12 @@ tamabot
 * Automatically breaks up expanded monster information table posts into chunks if they become too long
 * Monster table is 'hover-to-view' to be less intrusive via subreddit CSS
 * Finds 'ID in flair'-type posts, grabs the ID from user's flair, and replies with ID (for mobile users)
-* Bot posts will automatically delete on comment score below 0
-* Parent commenter has ability to delete via PM to bot
-* Subreddit mods have ability to delete via PM to bot
-* Subreddit mods can request bot shutdown via PM to bot
-* Keeps track of processed submissions and comments in case bot crashes and reboots to avoid repeat posts
+* Bot posts will automatically delete on comment score below 0 (functionality disabled on live bot)
+* Parent commenter has ability to delete via PM to bot (+delete [ID] in message body in PM to bot)
+* Thread OP/original submitter has ability to tell bot to ignore all posts in thread (+ignore [ID] in message body in PM to bot)
+* Commenter can tell tamabot to re-visit a post (+visit [ID] in message body in PM to bot)
+* Subreddit mods have ability to delete, ignore thread, re-visit, and shutdown the bot via PM
+* Keeps track of ignored threads and processed submissions and comments in case bot crashes and reboots to avoid unnecessary posts
 
 ##Dependencies
 * Tested on Python 2.7.6
