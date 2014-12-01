@@ -116,7 +116,7 @@ def table_output(padx, msg):
     i = len(msg) - 1
     sid = int(padx.id) / 50
     cid = int(padx.id) % 50
-    msg_temp = "[](#i/s%02d/c%02s/%s \"%s\")|" % (sid, cid, padx.id, padx.name.decode('utf-8'))
+    msg_temp = "[](#i/s%02d/c%02d/%s \"%s\")|" % (sid, cid, padx.id, padx.name.decode('utf-8'))
     msg_temp = "%s#%s|**[%s](http://www.puzzledragonx.com/en/monster.asp?n=%s)**\n" % (msg_temp, padx.id, padx.name.decode('utf-8'), padx.id)
     if padx.ls_id != '0':
         msg_temp = "%s |Leader|**[%s](http://www.puzzledragonx.com/en/leaderskill.asp?s=%s)**: %s\n" % (msg_temp, padx.ls_name.decode('utf-8'), padx.ls_id, padx.ls_text.decode('utf-8'))
