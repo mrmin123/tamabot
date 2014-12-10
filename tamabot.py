@@ -199,7 +199,7 @@ def check_posts(posts, post_type, forced):
             m = re.search(pattern_flair_call, post.body, re.I | re.U)
         if m:
             msg = []
-            m2 = re.search(pattern_flair_user, str(post.author_flair_text), re.I | re.U)
+            m2 = re.search(pattern_flair_user, post.author_flair_text.encode('utf-8'), re.I | re.U)
             if m2:
                 msg.append("%s\nFound %s's ID in flair: %s,%s,%s\n" % (intro, str(post.author), m2.group(1), m2.group(2), m2.group(3)))
                 create_post(post, msg, post_type, 'FLAIR ID')
