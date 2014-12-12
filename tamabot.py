@@ -256,6 +256,7 @@ def check_pm(msgs):
         if m:
             id = "t3_%s" % m.group(1)
             c = r.get_info(thing_id = id)
+            c_parent = r.get_info(thing_id = c.parent_id)
             if c_parent.author is not None and (msg.author.name == c.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123'):
                 check_ignored_submissions(ignored_submissions, m.group(1))
                 log_msg("Ignoring posts under %s by %s's request" % (m.group(1), msg.author.name))
