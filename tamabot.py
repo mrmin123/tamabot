@@ -6,7 +6,7 @@ from util import check_processed_posts, check_ignored_submissions, read_queue_fi
 from collections import deque
 from time import sleep
 
-user_agent = ("rPuzzlesAndDragonsBot 1.1 by /u/mrmin123")
+user_agent = ("rPuzzlesAndDragonsBot 1.2 by /u/mrmin123")
 
 # globals
 LIMIT = 15
@@ -21,10 +21,11 @@ processed_submissions_file = 'processed_submissions.txt'
 processed_comments_file = 'processed_comments.txt'
 ignored_submissions = deque([])
 ignored_submissions_file = 'ignored_submissions.txt'
-intro = "^This ^bot ^posts ^information ^from ^PADX ^for ^iconified ^monsters, ^as ^well ^as ^IDs ^from ^user ^flairs. ^For ^more ^information, ^read ^the ^[Github](https://github.com/mrmin123/tamabot/) ^page.\n"
-signature = "\n^Processing... ^|| ^Use ^with ^[Iconify](http://tamadra.com/iconify) ^|| ^[Source/contact](https://github.com/mrmin123/tamabot/)"
+intro = "^This ^bot ^posts ^information ^from ^PADX ^for ^iconified ^monsters, ^PADX ^teams, ^as ^well ^as ^IDs ^from ^user ^flairs. ^For ^more ^information, ^please ^read ^the ^[Github](https://github.com/mrmin123/tamabot/) ^page.\n"
+signature = "\n^Processing... ^|| ^Use ^with ^[Iconify](http://tamadra.com/iconify) ^and ^[PADXSimulator](http://www.puzzledragonx.com/en/simulator.asp) ^|| ^[Source/contact](https://github.com/mrmin123/tamabot/)"
 signature_add = "^Parent ^commentor ^can ^[delete](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___CID___) ^this ^post ^|| ^OP ^can ^tell ^Tamabot ^to ^[ignore](/message/compose?to=tamabot&subject=tamabot%20ignore&message=%2Bignore+___PID___) ^this ^thread ^and ^all ^child ^posts"
 pattern_icon = re.compile('\[.*?]\((?:#m)?(?:#i)?\/?(?P<sid>s\d+)?\/?(?P<cid>c\d+)?\/(?P<id>\d+)? ?\"?([^\"]+)??\"?\)')
+pattern_padxsim = ur'puzzledragonx\.com/[^/]+/simulator.asp\?q=([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+'
 pattern_flair_call = ur'id (?:is )?(?:in )?(?:my )?flair'
 pattern_flair_user = ur'(?<!\d)(\d{3})(?:[,. ])?(\d{3})(?:[,. ])?(\d{3})(?!\d)'
 loop = 0
@@ -134,7 +135,7 @@ def table_output(padx, msg):
     else:
         msg_temp = "%s |Awoken|None\n" % (msg_temp)
 
-    if len(msg[i]) + len(msg_temp) + len(signature) > 9700:
+    if len(msg[i]) + len(msg_temp) + len(signature) > 9600:
         log_msg("message long... splitting")
         msg.append(table_header)
         msg[i + 1] = msg[i + 1] + msg_temp
@@ -165,12 +166,13 @@ def check_posts(posts, post_type, forced):
                 if str(post.link_id)[3:] in ignored_submissions:
                     continue
 
-        # check for Monster Icons
-        n, temp_id, msg, listed = 0, 0, [], []
         if post_type == 'SUBMISSIONS':
             temp_text = post.selftext
         elif post_type == 'COMMENTS':
             temp_text = post.body
+
+        # check for Monster Icons
+        n, temp_id, msg, listed = 0, 0, [], []
         for m in pattern_icon.finditer(temp_text):
             e = m.groupdict()
             if e['id'] is not None:
@@ -189,20 +191,39 @@ def check_posts(posts, post_type, forced):
                 processed_monsters.append(temp_id)
                 n = n + 1
             listed.append(temp_id)
+
+        # check for PADX Team
+        m = re.findall(pattern_padxsim, temp_text, re.I | re.U)
+        if m:
+            for e in m:
+                for i in e:
+                    temp_id = int(i)
+                    if temp_id == 0 or temp_id in listed:
+                        continue;
+                    if temp_id not in padx_storage:
+                        padx_storage[temp_id] = PADXData(temp_id)
+                        processed_monsters.append(temp_id)
+                        sleep(1)
+                    if padx_storage[temp_id].status == 1:
+                        msg = table_output(padx_storage[temp_id], msg)
+                        processed_monsters.remove(temp_id)
+                        processed_monsters.append(temp_id)
+                        n = n + 1
+                    listed.append(temp_id)
+
+        # create Monster Table
         if n > 0:
             create_post(post, msg, post_type, 'MONSTER TABLE')
 
         # check for Flair Call
-        if post_type == 'SUBMISSIONS':
-            m = re.search(pattern_flair_call, post.selftext, re.I | re.U)
-        elif post_type == 'COMMENTS':
-            m = re.search(pattern_flair_call, post.body, re.I | re.U)
+        m = re.search(pattern_flair_call, temp_text, re.I | re.U)
         if m:
             msg = []
-            m2 = re.search(pattern_flair_user, post.author_flair_text.encode('utf-8'), re.I | re.U)
-            if m2:
-                msg.append("%s\nFound %s's ID in flair: %s,%s,%s\n" % (intro, str(post.author), m2.group(1), m2.group(2), m2.group(3)))
-                create_post(post, msg, post_type, 'FLAIR ID')
+            if post.author_flair_text is not None:
+                m2 = re.search(pattern_flair_user, post.author_flair_text.encode('utf-8'), re.I | re.U)
+                if m2:
+                    msg.append("%s\nFound %s's ID in flair: %s,%s,%s\n" % (intro, str(post.author), m2.group(1), m2.group(2), m2.group(3)))
+                    create_post(post, msg, post_type, 'FLAIR ID')
 
         # update processed posts list
         if post_type == 'SUBMISSIONS':
