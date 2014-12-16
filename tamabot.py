@@ -167,9 +167,9 @@ def check_posts(posts, post_type, forced):
                     continue
 
         if post_type == 'SUBMISSIONS':
-            temp_text = post.selftext
+            temp_text = post.selftext.encode('utf-8')
         elif post_type == 'COMMENTS':
-            temp_text = post.body
+            temp_text = post.body.encode('utf-8')
 
         # check for Monster Icons
         n, temp_id, msg, listed = 0, 0, [], []
