@@ -4,7 +4,7 @@ import praw, re, requests
 from config import USERNAME, PASSWORD, SUBREDDIT
 from util import check_processed_posts, check_ignored_submissions, read_queue_file, update_queue_file, log_msg, log_success, log_warning, log_error
 from collections import deque
-from time import sleep
+from time import sleep, strftime, gmtime
 
 user_agent = ("rPuzzlesAndDragonsBot 1.2 by /u/mrmin123")
 
@@ -51,6 +51,7 @@ class PADXData():
         self.REQUESTING = True
         self.id = id
         self.awk = []
+        self.generated = 0
         while self.REQUESTING:
             try:
                 self.html = requests.get("http://www.puzzledragonx.com/en/monster.asp?n=%s" % self.id).content
@@ -63,6 +64,7 @@ class PADXData():
                 self.get_as()
                 self.get_acd()
                 self.get_awk()
+                self.generated = int(strftime("%Y%m%d", gmtime()))
                 self.status = 1
                 self.REQUESTING = False
                 if self.name == "Puzzle Dragon X":
@@ -106,6 +108,10 @@ class PADXData():
                     self.awk.append([int(e[0]) - 1, e[1].strip()])
 
 def process_monsters(i, n, listed, msg):
+    """
+    checks monster ID i against stored/previously generated PADXData entries;
+    reloads data from PADX if a day old
+    """
     if i == 0 or i in listed:
         return (n, listed, msg)
     if i not in padx_storage:
@@ -113,6 +119,8 @@ def process_monsters(i, n, listed, msg):
         processed_monsters.append(i)
         sleep(1)
     if padx_storage[i].status == 1:
+        if int(strftime("%Y%m%d", gmtime())) - padx_storage[i].generated > 0:
+            padx_storage[i] = PADXData(i)
         msg = table_output(padx_storage[i], msg)
         processed_monsters.remove(i)
         processed_monsters.append(i)
@@ -122,8 +130,9 @@ def process_monsters(i, n, listed, msg):
 
 def table_output(padx, msg):
     """
-    uses PADX data to build reddit post output; automatically creates a new post
-    if the # of chars > 10000 (reddit limit); automatically apends bot signature
+    uses PADX data to build reddit post output; automatically creates a new
+    post if the # of chars > 10000 (reddit limit); automatically apends bot
+    signature
     """
     table_header = "%s###### &#009;\n#### &#009;\n##### &#009;\n|||Expanded Monster Information ___MTABLE___ [hover to view]|\n:--:|--:|:--\n" % intro
     if len(msg) == 0:
@@ -159,8 +168,8 @@ def table_output(padx, msg):
 
 def check_posts(posts, post_type, forced):
     """
-    main function for checking submissions and replies made in subreddit; checks
-    for iconified monster links and 'flair in ID' messages
+    main function for checking submissions and replies made in subreddit;
+    checks for iconified monster links and 'flair in ID' messages
     """
     for post in posts:
         # skip if post made by bot
@@ -226,8 +235,8 @@ def check_posts(posts, post_type, forced):
 
 def check_self_posts(posts):
     """
-    function for checking comment score of posts made by bot; delete if score is
-    less than 1 (downvoted)
+    function for checking comment score of posts made by bot; delete if score
+    is less than 1 (downvoted)
     """
     try:
         for post in posts:
@@ -240,8 +249,8 @@ def check_self_posts(posts):
 def check_pm(msgs):
     """
     function for checking bot's private messages; delete if parent commentor
-    (or subreddit moderator) has requested post deletion; stops bot if moderator
-    has requested a halt
+    (or subreddit moderator) has requested post deletion; stops bot if
+    moderator has requested a halt
     """
     for msg in msgs:
         # check for delete request
