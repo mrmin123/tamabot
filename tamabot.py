@@ -105,6 +105,20 @@ class PADXData():
                 for e in n:
                     self.awk.append([int(e[0]) - 1, e[1].strip()])
 
+def process_monsters(i, n, listed, msg):
+    if i == 0 or i in listed:
+        return (n, listed, msg)
+    if i not in padx_storage:
+        padx_storage[i] = PADXData(i)
+        processed_monsters.append(i)
+        sleep(1)
+    if padx_storage[i].status == 1:
+        msg = table_output(padx_storage[i], msg)
+        processed_monsters.remove(i)
+        processed_monsters.append(i)
+        n = n + 1
+    listed.append(i)
+    return (n, listed, msg)
 
 def table_output(padx, msg):
     """
@@ -179,18 +193,7 @@ def check_posts(posts, post_type, forced):
                 temp_id = int(e['id'])
             elif e['sid'] is not None and e['cid'] is not None:
                 temp_id = (int(e['sid'][1:]) * 50) + int(e['cid'][1:]) + 1
-            if temp_id == 0 or temp_id in listed:
-                continue
-            if temp_id not in padx_storage:
-                padx_storage[temp_id] = PADXData(temp_id)
-                processed_monsters.append(temp_id)
-                sleep(1)
-            if padx_storage[temp_id].status == 1:
-                msg = table_output(padx_storage[temp_id], msg)
-                processed_monsters.remove(temp_id)
-                processed_monsters.append(temp_id)
-                n = n + 1
-            listed.append(temp_id)
+            n, listed, msg = process_monsters(temp_id, n, listed, msg)
 
         # check for PADX Team
         m = re.findall(pattern_padxsim, temp_text, re.I | re.U)
@@ -198,18 +201,7 @@ def check_posts(posts, post_type, forced):
             for e in m:
                 for i in e:
                     temp_id = int(i)
-                    if temp_id == 0 or temp_id in listed:
-                        continue;
-                    if temp_id not in padx_storage:
-                        padx_storage[temp_id] = PADXData(temp_id)
-                        processed_monsters.append(temp_id)
-                        sleep(1)
-                    if padx_storage[temp_id].status == 1:
-                        msg = table_output(padx_storage[temp_id], msg)
-                        processed_monsters.remove(temp_id)
-                        processed_monsters.append(temp_id)
-                        n = n + 1
-                    listed.append(temp_id)
+                    n, listed, msg = process_monsters(temp_id, n, listed, msg)
 
         # create Monster Table
         if n > 0:
