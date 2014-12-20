@@ -24,7 +24,7 @@ ignored_submissions_file = 'ignored_submissions.txt'
 intro = "^This ^bot ^posts ^information ^from ^PADX ^for ^iconified ^monsters, ^PADX ^teams, ^as ^well ^as ^IDs ^from ^user ^flairs. ^For ^more ^information, ^please ^read ^the ^[Github](https://github.com/mrmin123/tamabot/) ^page.\n"
 signature = "\n^Processing... ^|| ^Use ^with ^[Iconify](http://tamadra.com/iconify) ^and ^[PADXSimulator](http://www.puzzledragonx.com/en/simulator.asp) ^|| ^[Source/contact](https://github.com/mrmin123/tamabot/)"
 signature_add = "^Parent ^commentor ^can ^[delete](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___CID___) ^this ^post ^|| ^OP ^can ^tell ^Tamabot ^to ^[ignore](/message/compose?to=tamabot&subject=tamabot%20ignore&message=%2Bignore+___PID___) ^this ^thread ^and ^all ^child ^posts"
-pattern_icon = re.compile('\[.*?]\((?:#m)?(?:#i)?\/?(?P<sid>s\d+)?\/?(?P<cid>c\d+)?\/(?P<id>\d+)? ?\"?([^\"]+)??\"?\)')
+pattern_icon = re.compile('\[.*?]\((?:#m)?(?:#i)?\/?(?P<sid>s\d+)?\/?(?P<cid>c\d+)?\/(?P<id>\d+)?( "[^"]+?")?\)')
 pattern_padxsim = ur'puzzledragonx\.com/[^/]+/simulator.asp\?q=([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+'
 pattern_flair_call = ur'id (?:is )?(?:in )?(?:my )?flair'
 pattern_flair_user = ur'(?<!\d)(\d{3})(?:[,. ])?(\d{3})(?:[,. ])?(\d{3})(?!\d)'
