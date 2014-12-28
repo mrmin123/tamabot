@@ -5,8 +5,8 @@ from config import USERNAME, PASSWORD, SUBREDDIT
 from util import check_processed_posts, check_ignored_submissions, read_queue_file, update_queue_file, log_msg, log_success, log_warning, log_error
 from collections import deque
 from time import sleep, strftime, gmtime
-
-user_agent = ("rPuzzlesAndDragonsBot 1.2 by /u/mrmin123")
+from bs4 import BeautifulSoup
+user_agent = ("rPuzzlesAndDragonsBot 1.3 by /u/mrmin123")
 
 # globals
 LIMIT = 15
@@ -40,30 +40,16 @@ class PADXData():
     PADX Data class
     gets HTML of PADX page for given monster ID and parses out relevant data
     """
-    pattern_name = ur'h1>(.+?)<\/h1'
-    pattern_as = ur'>Active Skill:.+?skill.asp\?s=(\d+)\">[^>]+?>(.+?)<\/.+?Effects:.+?\">(.+?)<\/'
-    pattern_acd = ur'>Cool Down:(?:[^>]+>){2}(.+?)<'
-    pattern_ls = ur'>Leader Skill:.+?leaderskill.asp\?s=(\d+)\">[^>]+?>(.+?)<\/.+?Effects:.+?\">(.+?)<\/'
-    pattern_awk_area = ur'Awoken Skills:(.+?)<\/tr>'
-    pattern_awk = ur'awokenskill.asp\?s=(\d+).+?title="(.+)\n'
-
     def __init__(self, id):
         self.REQUESTING = True
         self.id = id
-        self.awk = []
         self.generated = 0
         while self.REQUESTING:
             try:
                 self.html = requests.get("http://www.puzzledragonx.com/en/monster.asp?n=%s" % self.id).content
-                m = re.search(self.pattern_name, self.html, re.I | re.U)
-                if m:
-                    self.name = m.group(1)
-                else:
-                    self.name = "Monster #%s" % self.id
-                self.get_ls()
-                self.get_as()
-                self.get_acd()
-                self.get_awk()
+                self.parsed_html = BeautifulSoup(self.html)
+                self.name = self.parsed_html.body.find('h1').text
+                self.get_data()
                 self.generated = int(strftime("%Y%m%d", gmtime()))
                 self.status = 1
                 self.REQUESTING = False
@@ -74,38 +60,56 @@ class PADXData():
                 self.status = 0
                 sleep(SLEEP_LONG)
 
-    def get_ls(self):
-        """ get leader skill id, name, and description """
-        m = re.search(self.pattern_ls, self.html, re.I | re.U)
-        if m:
-            self.ls_id, self.ls_name, self.ls_text = m.group(1), m.group(2), m.group(3)
-        else :
-            self.ls_id, self.ls_name, self.ls_text = "0", "None", "None"
+    def get_data(self):
+        """ get leader and active skill data """
+        self.type = []
+        self.type_formatted = []
+        self.ls_id, self.ls_name, self.ls_text = "0", "None", "None"
+        self.as_id, self.as_name, self.as_text = "0", "None", "None"
+        self.acd_text = ""
+        self.awk = []
+        tds = self.parsed_html.body.find_all('td', class_='ptitle')
+        for td in tds:
+            if td.text == 'Type:':
+                td_next = td.find_next_sibling()
+                self.type = td_next.text.split(" / ")
+                self.type_formatted = self.type
+                for a, t in enumerate(self.type_formatted):
+                    tempa = t.split()
+                    for b, temp in enumerate(tempa):
+                        tempa[b] = "^" + temp
+                    self.type_formatted[a] = " ".join(tempa)
+                    if a < len(self.type_formatted) - 1:
+                        self.type_formatted[a] = self.type_formatted[a] + " ^/"
 
-    def get_as(self):
-        """ get active skill id, name, and description """
-        m = re.search(self.pattern_as, self.html, re.I | re.U)
-        if m:
-            self.as_id, self.as_name, self.as_text = m.group(1), m.group(2), m.group(3)
-        else :
-            self.as_id, self.as_name, self.as_text = "0", "None", "None"
-
-    def get_acd(self):
-        """ get active skill cooldown """
-        m = re.search(self.pattern_acd, self.html, re.I | re.U)
-        if m:
-            self.acd_text = m.group(1)
-        else:
-            self.acd_text = "None"
-
-    def get_awk(self):
-        """ get awoken skills """
-        m = re.search(self.pattern_awk_area, self.html, re.I | re.U | re.S)
-        if m:
-            n = re.findall(self.pattern_awk, m.group(1), re.I | re.U)
-            if n:
-                for e in n:
-                    self.awk.append([int(e[0]) - 1, e[1].strip()])
+        tds = self.parsed_html.body.find_all('td', class_='title')
+        for td in tds:
+            if td.text == 'Leader Skill:':
+                td_next = td.find_next_sibling()
+                self.ls_name = td_next.text
+                if td_next.a is not None:
+                    m = re.search(ur'leaderskill\.asp\?s=(\d+)', td_next.a.get('href'))
+                    if m:
+                        self.ls_id = m.group(1)
+                    self.ls_text = td.parent.find_next_sibling().find('td', class_='value-end').text
+            elif td.text == 'Active Skill:':
+                td_next = td.find_next_sibling()
+                self.as_name = td_next.text
+                if td_next.a is not None:
+                    m = re.search(ur'skill\.asp\?s=(\d+)', td_next.a.get('href'))
+                    if m:
+                        self.as_id = m.group(1)
+                    self.as_text = td.parent.find_next_sibling().find('td', class_='value-end').text
+            elif td.text == 'Cool Down:':
+                td_next = td.find_next_sibling()
+                self.acd_text = td_next.text
+            elif td.text == 'Awoken Skills:':
+                td_next = td.find_next_sibling()
+                td_next_as = td_next.find_all('a')
+                for td_next_a in td_next_as:
+                    m = re.search(ur'awokenskill\.asp\?s=(\d+)', td_next_a.get('href'))
+                    if m:
+                        self.awk.append(int(m.group(1)) - 1)
 
 def process_monsters(i, n, listed, msg):
     """
@@ -140,20 +144,28 @@ def table_output(padx, msg):
     i = len(msg) - 1
     sid = int(padx.id) / 50
     cid = int(padx.id) % 50
-    msg_temp = "[](#i/s%02d/c%02d/%s \"%s\")|" % (sid, cid, padx.id, padx.name.decode('utf-8'))
-    msg_temp = "%s#%s|**[%s](http://www.puzzledragonx.com/en/monster.asp?n=%s)**\n" % (msg_temp, padx.id, padx.name.decode('utf-8'), padx.id)
-    if padx.ls_id != '0':
-        msg_temp = "%s |Leader|**[%s](http://www.puzzledragonx.com/en/leaderskill.asp?s=%s)**: %s\n" % (msg_temp, padx.ls_name.decode('utf-8'), padx.ls_id, padx.ls_text.decode('utf-8'))
+    msg_temp = "[](#i/s%02d/c%02d/%s \"%s\")|" % (sid, cid, padx.id, padx.name)
+    msg_temp = "%s#%s|**[%s](http://www.puzzledragonx.com/en/monster.asp?n=%s)**\n" % (msg_temp, padx.id, padx.name, padx.id)
+    if len(padx.type_formatted) > 0:
+        msg_temp = "%s%s" % (msg_temp, padx.type_formatted[0])
     else:
-        msg_temp = "%s |Leader|**%s**\n" % (msg_temp, padx.ls_name)
+        msg_temp = "%s " % msg_temp
+    if padx.ls_id != '0':
+        msg_temp = "%s|Leader|**[%s](http://www.puzzledragonx.com/en/leaderskill.asp?s=%s)**: %s\n" % (msg_temp, padx.ls_name, padx.ls_id, padx.ls_text)
+    else:
+        msg_temp = "%s|Leader|**%s**\n" % (msg_temp, padx.ls_name)
+    if len(padx.type_formatted) > 1:
+        msg_temp = "%s%s" % (msg_temp, padx.type_formatted[1])
+    else:
+        msg_temp = "%s " % msg_temp
     if padx.as_id != '0':
-        msg_temp = "%s |Active|**[%s](http://www.puzzledragonx.com/en/skill.asp?s=%s)**: %s (%s)\n" % (msg_temp, padx.as_name.decode('utf-8'), padx.as_id, padx.as_text.decode('utf-8'), padx.acd_text)
+        msg_temp = "%s |Active|**[%s](http://www.puzzledragonx.com/en/skill.asp?s=%s)**: %s (%s)\n" % (msg_temp, padx.as_name, padx.as_id, padx.as_text, padx.acd_text)
     else:
         msg_temp = "%s |Active|**%s**\n" % (msg_temp, padx.as_name)
     if len(padx.awk) != 0:
         awk_temp = ""
         for a in padx.awk:
-            awk_temp = "%s[](#i/awoken/c%02d/ '%s') " % (awk_temp, a[0], a[1])
+            awk_temp = "%s[](#i/awoken/c%02d/) " % (awk_temp, a)
         msg_temp = "%s |Awoken|%s\n" % (msg_temp, awk_temp)
     else:
         msg_temp = "%s |Awoken|None\n" % (msg_temp)
@@ -221,9 +233,12 @@ def check_posts(posts, post_type, forced):
         if m:
             msg = []
             if post.author_flair_text is not None:
-                m2 = re.search(pattern_flair_user, post.author_flair_text.encode('utf-8'), re.I | re.U)
+                m2 = re.findall(pattern_flair_user, post.author_flair_text.encode('utf-8'), re.I | re.U)
                 if m2:
-                    msg.append("%s\nFound %s's ID in flair: %s,%s,%s\n" % (intro, str(post.author), m2.group(1), m2.group(2), m2.group(3)))
+                    flair_temp = []
+                    for e in m2:
+                        flair_temp.append("**%s,%s,%s**" % (e[0], e[1], e[2]))
+                    msg.append("%s\nFound %s's ID(s) in flair: %s\n" % (intro, str(post.author), " / ".join(flair_temp)))
                     create_post(post, msg, post_type, 'FLAIR ID')
 
         # update processed posts list
@@ -337,7 +352,6 @@ def create_post(post, msg, post_type, msg_type):
             m_tmp = m_tmp.replace('&amp;#', '&#')
             r.get_info(thing_id='t1_' + str(c.id)).edit(m_tmp)
             sleep(SLEEP_LONG)
-
     except Exception as e:
         log_error(e)
 
