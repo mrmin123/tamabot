@@ -1,6 +1,6 @@
 tamabot
 =======
-[/r/PuzzleAndDragons](http://www.reddit.com/r/PuzzleAndDragons) helper bot
+[/r/PuzzleAndDragons](http://www.reddit.com/r/PuzzleAndDragons) helper bot. See it in action as [/u/tamabot](http://www.reddit.com/user/tamabot/).
 
 ##Features
 * Finds posts with [Iconified](http://tamadra.com/iconify) monster icons (even ones not yet supported by subreddit styles) and/or [PADX Team Simulator](http://www.puzzledragonx.com/en/simulator.asp) links, grab relevant monster information from [PADX](http://www.puzzledragonx.com/), and posts a reply with the information in a table
