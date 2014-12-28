@@ -17,6 +17,7 @@ tamabot
 ##Dependencies
 * Tested on Python 2.7.6
 * [PRAW](https://praw.readthedocs.org/)
+* [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
 
 ##Contact
 Please PM [/u/mrmin123](http://www.reddit.com/message/compose?to=mrmin123&subject=tamabot) regarding any inquiries or feedback on tamabot.
