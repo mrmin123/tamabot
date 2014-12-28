@@ -6,7 +6,7 @@ tamabot
 * Finds posts with [Iconified](http://tamadra.com/iconify) monster icons (even ones not yet supported by subreddit styles) and/or [PADX Team Simulator](http://www.puzzledragonx.com/en/simulator.asp) links, grab relevant monster information from [PADX](http://www.puzzledragonx.com/), and posts a reply with the information in a table
 * Automatically breaks up expanded monster information table posts into chunks if they become too long
 * Monster table is 'hover-to-view' to be less intrusive via subreddit CSS
-* Finds 'ID in flair'-type posts, grabs the ID from user's flair, and replies with ID (for mobile users)
+* Finds 'ID in flair'-type posts, grabs IDs from user's flair, and replies with IDs (for mobile users)
 * Bot posts will automatically delete on comment score below 0 (functionality disabled on live bot)
 * Parent commenter has ability to delete via PM to bot (+delete [ID] in message body in PM to bot)
 * Thread OP/original submitter has ability to tell bot to ignore all posts in thread (+ignore [ID] in message body in PM to bot)
