@@ -1,0 +1,183 @@
+html, body {
+	font-family: 'Noto Sans', sans-serif;
+	padding: 0;
+	margin: 0;
+	background-color: #f5f5f5;
+	color: #527287;
+}
+
+#header {
+	margin-top: 1em;
+	background-image: url("tamabot.png");
+	background-repeat: no-repeat;
+	background-position: 25% 0%;
+	text-align: center;
+}
+
+#header h1 {
+	padding: 2.2em 0 1em 0;
+	margin: 0;
+	color: #d75c37;
+	font-size: 2.2em;
+	font-weight: bold;
+}
+
+#header h1 span {
+	padding: 0 0.3em 0 0.3em;
+	background-color: rgba(245,245,245, 0.6);
+}
+
+h2 {
+	font-size: 1em;
+	text-transform: uppercase;
+	width: 100%;
+	padding: 0.3em 0.1em 0.3em 0.3em;
+	margin: 0.8em 0;
+	background-color: #c3d7df;
+}
+
+h2#first {
+	margin-top: 0;
+}
+
+h2#last {
+	margin-bottom: 0;
+}
+
+#links {
+	text-align: center;
+	font-size: 0.8em;
+}
+
+#links a {
+	color: #d75c37;
+	text-decoration: none;
+	padding-bottom: 0.1em;
+	border-bottom: 1px solid rgba(215,92,55, 0);
+	-webkit-transition: all 0.2s;
+	-moz-transition: all 0.2s;
+	-ms-transition: all 0.2s;
+	-o-transition: all 0.2s;
+	transition: all 0.2s;
+}
+
+#links a:hover {
+	padding-bottom: 0;
+	border-bottom: 1px solid rgba(215,92,55, 1);
+}
+
+#pm_helper {
+	padding: 0 10px 0 10px;
+}
+
+#pm_helper input[type="text"] {;
+	margin-bottom: 0.5em;
+}
+
+#pm_helper button[type="submit"] {
+	width: 99%;
+	color: #444a4f;
+	background: none;
+	border: 1px solid #444a4f;
+	-webkit-transition: all 0.2s;
+	-moz-transition: all 0.2s;
+	-ms-transition: all 0.2s;
+	-o-transition: all 0.2s;
+	transition: all 0.2s;
+}
+
+#pm_helper button[type="submit"]:hover {
+	background-color: #c3d7df;
+}
+
+#graph_container {
+	min-width: 100%;
+	height: 200px;
+	margin: 0 auto;
+}
+
+.grid {
+	font-size: 0.8em;
+	background-color: #f5f5f5;
+}
+
+.grid:nth-child(odd) {
+	font-weight: bold;
+	text-align: right;
+}
+
+
+.grid:nth-child(odd) > span {
+	padding-right: 0.5em;
+}
+
+.grid:nth-child(even) {
+	text-align: left;
+}
+
+#log {
+	background-color: #f5f5f5;
+	text-align: center;
+}
+
+#log .loading {
+	font-size: 3em;
+	margin-top: 1em;
+}
+
+#log .log_line {
+	text-align: left;
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: stretch;
+	width: 100%;
+	margin: 0;
+	padding: 0.3em 0.2em;
+	color: #527287;
+	background-color: rgba(195,215,223,0);
+	font-size: 0.8em;
+	-webkit-transition: all 0.2s;
+	-moz-transition: all 0.2s;
+	-ms-transition: all 0.2s;
+	-o-transition: all 0.2s;
+	transition: all 0.2s;
+}
+
+#log .log_line:nth-child(even) {
+	background-color: #dbe9ef;
+}
+
+#log .log_line:hover {
+	background-color: rgba(195,215,223,1);
+}
+
+#log .log_line span a {
+	color: #444a4f;
+	text-decoration: none;
+	border-bottom: 1px solid rgba(68,74,79, 0);
+	outline: none;
+	-webkit-transition: all 0.2s;
+	-moz-transition: all 0.2s;
+	-ms-transition: all 0.2s;
+	-o-transition: all 0.2s;
+	transition: all 0.2s;
+}
+
+#log .log_line span a:hover {
+	color: #d75c37;
+	border-bottom: 1px solid rgba(215,92,55, 1);
+}
+
+#log .log_line > * {
+	text-indent: 0.1em;
+
+}
+
+#log .log_line .ts {
+	white-space: nowrap;
+}
+
+#tamabot2 {
+	margin: 2em 0 1em 0;
+	text-align: center;
+}

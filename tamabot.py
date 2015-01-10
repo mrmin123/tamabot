@@ -1,17 +1,22 @@
 # -*- coding: utf-8 -*-
 
-import praw, re, requests
-from config import USERNAME, PASSWORD, SUBREDDIT
-from util import check_processed_posts, check_ignored_submissions, read_queue_file, update_queue_file, log_msg, log_success, log_warning, log_error
+import praw, re, requests, pymongo
+from config import USERNAME, PASSWORD, SUBREDDIT, MONGO_URL, MONGO_PORT, MONGO_DB
+from util import check_processed_posts, read_queue_file, update_queue_file, reset_db, update_db, log_msg, log_success, log_warning, log_error
 from collections import deque
 from time import sleep, strftime, gmtime
 from bs4 import BeautifulSoup
-user_agent = ("rPuzzlesAndDragonsBot 1.3 by /u/mrmin123")
 
-# globals
+user_agent = ("rPuzzlesAndDragonsBot 2.0 by /u/mrmin123")
+
+# constants
 LIMIT = 15
 SLEEP = 3
 SLEEP_LONG = 15
+MONSTER_LIMIT = 200
+MSG_LEN_LIMIT = 9600
+
+# globals
 mod_list = []
 padx_storage = {}
 processed_monsters = deque([])
@@ -22,12 +27,12 @@ processed_comments_file = 'processed_comments.txt'
 ignored_submissions = deque([])
 ignored_submissions_file = 'ignored_submissions.txt'
 intro = "^This ^bot ^posts ^information ^from ^PADX ^for ^iconified ^monsters, ^PADX ^teams, ^as ^well ^as ^IDs ^from ^user ^flairs. ^For ^more ^information, ^please ^read ^the ^[Github](https://github.com/mrmin123/tamabot/) ^page.\n"
-signature = "\n^Processing... ^|| ^Use ^with ^[Iconify](http://tamadra.com/iconify) ^and ^[PADXSimulator](http://www.puzzledragonx.com/en/simulator.asp) ^|| ^[Source/contact](https://github.com/mrmin123/tamabot/)"
-signature_add = "^Parent ^commentor ^can ^[delete](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___CID___) ^this ^post ^|| ^OP ^can ^tell ^Tamabot ^to ^[ignore](/message/compose?to=tamabot&subject=tamabot%20ignore&message=%2Bignore+___PID___) ^this ^thread ^and ^all ^child ^posts"
+signature = "\n^Processing... ^|| ^Use ^with ^[Iconify](http://tamadra.com/iconify) ^and ^[PADXSimulator](http://www.puzzledragonx.com/en/simulator.asp) ^|| ^[Homepage](http://minyoung.ch/tamabot/)"
+signature_add = "^Parent ^commentor ^can ^[delete](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___CID___) ^this ^post ^|| ^OP ^can ^tell ^bot ^to ^[ignore](/message/compose?to=tamabot&subject=tamabot%20ignore&message=%2Bignore+___PID___) ^this ^thread ^and ^all ^child ^posts"
 pattern_icon = re.compile('\[.*?]\((?:#m)?(?:#i)?\/?(?P<sid>s\d+)?\/?(?P<cid>c\d+)?\/(?P<id>\d+)?( "[^"]+?")?\)')
 pattern_padxsim = ur'puzzledragonx\.com/[^/]+/simulator.asp\?q=([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+'
 pattern_flair_call = ur'id (?:is )?(?:in )?(?:my )?flair'
-pattern_flair_user = ur'(?<!\d)(\d{3})(?:[,. ])?(\d{3})(?:[,. ])?(\d{3})(?!\d)'
+pattern_flair_user = ur'(?<!\d)(\d{3})(?:[,\. ])?(\d{3})(?:[,\. ])?(\d{3})(?!\d)'
 loop = 0
 
 # read in processed queue files in case of script crash
@@ -47,12 +52,14 @@ class PADXData():
         while self.REQUESTING:
             try:
                 self.html = requests.get("http://www.puzzledragonx.com/en/monster.asp?n=%s" % self.id).content
-                self.parsed_html = BeautifulSoup(self.html)
+                self.parsed_html = BeautifulSoup(self.html, from_encoding="utf-8")
                 self.name = self.parsed_html.body.find('h1').text
                 self.get_data()
                 self.generated = int(strftime("%Y%m%d", gmtime()))
                 self.status = 1
                 self.REQUESTING = False
+                self.html = None
+                self.parsed_html = None
                 if self.name == "Puzzle Dragon X":
                     self.status = 0
             except Exception as e:
@@ -170,8 +177,9 @@ def table_output(padx, msg):
     else:
         msg_temp = "%s |Awoken|None\n" % (msg_temp)
 
-    if len(msg[i]) + len(msg_temp) + len(signature) > 9600:
+    if len(msg[i]) + len(msg_temp) + len(signature) > MSG_LEN_LIMIT:
         log_msg("message long... splitting")
+        update_db(log_coll, stat_coll, 'SPLIT', '', '')
         msg.append(table_header)
         msg[i + 1] = msg[i + 1] + msg_temp
     else:
@@ -256,7 +264,7 @@ def check_self_posts(posts):
     try:
         for post in posts:
             if post.score < 1:
-                delete_post(post, 'SCORE')
+                delete_post(post, 'SCORE', '', '')
         sleep(SLEEP_LONG)
     except Exception as e:
         log_error(e)
@@ -273,20 +281,23 @@ def check_pm(msgs):
         if m:
             id = "t1_%s" % m.group(1)
             c = r.get_info(thing_id = id)
-            c_parent = r.get_info(thing_id = c.parent_id)
-            if c_parent.author is None:
-                delete_post(c, 'PM')
-            else:
-                if msg.author.name == c_parent.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123':
-                    if "Please request this post to be deleted to un-ignore." in c.body:
-                        log_msg("Un-ignoring posts under %s by %s's request" % (c.parent_id, msg.author.name))
-                        try:
-                            ignored_submissions.remove(str(c.parent_id)[3:])
-                        except Exception as e:
-                            log_error(e)
-                    delete_post(c, 'PM')
+            if c is not None:
+                c_parent = r.get_info(thing_id = c.parent_id)
+                if c_parent.author is None:
+                    delete_post(c, 'PM', '', msg.author.name)
                 else:
-                    log_warning("Incorrect delete request from %s for %s" % (msg.author.name, m.group(1)))
+                    if msg.author.name == c_parent.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123':
+                        if "Please request this post to be deleted to un-ignore." in c.body:
+                            log_msg("Un-ignoring posts under %s by %s's request" % (c_parent.permalink, msg.author.name))
+                            update_db(log_coll, stat_coll, 'UNIGNORE', c_parent.permalink, msg.author.name)
+                            try:
+                                ignored_submissions.remove(str(c.parent_id)[3:])
+                            except Exception as e:
+                                log_error(e)
+                        delete_post(c, 'PM', c_parent.permalink, msg.author.name)
+                    else:
+                        log_warning("Incorrect delete request from %s for %s" % (msg.author.name, c.permalink))
+                        update_db(log_coll, stat_coll, 'DEL_BAD', c.permalink, msg.author.name)
 
         # check for ignore request
         m = re.search(ur'^\+ignore\s(.+?)$', msg.body.lower())
@@ -294,12 +305,15 @@ def check_pm(msgs):
             id = "t3_%s" % m.group(1)
             c = r.get_info(thing_id = id)
             if c.author is not None and (msg.author.name == c.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123'):
-                check_ignored_submissions(ignored_submissions, m.group(1))
-                log_msg("Ignoring posts under %s by %s's request" % (m.group(1), msg.author.name))
-                temp_msg = "%s\nI am ignoring any new posts in this thread by OP/moderator's request! Please request this post to be deleted to un-ignore.\n" % intro
-                create_post(c, [temp_msg], 'SUBMISSIONS', 'IGNORE')
+                if m.group(1) not in ignored_submissions:
+                    ignored_submissions.append(m.group(1))
+                    log_msg("Ignoring posts under %s by %s's request" % (c.short_link, msg.author.name))
+                    update_db(log_coll, stat_coll, 'IGNORE_PM', c.short_link, msg.author.name)
+                    temp_msg = "%s\nI am ignoring any new posts in this thread by OP/moderator's request! Please request this post to be deleted to un-ignore.\n" % intro
+                    create_post(c, [temp_msg], 'SUBMISSIONS', 'IGNORE_POST')
             else:
                 log_warning("Incorrect ignore request from %s for %s" % (msg.author.name, m.group(1)))
+                update_db(log_coll, stat_coll, 'IGNORE_BAD', m.group(1), msg.author.name)
 
         # check for revisit
         m = re.search(ur'^\+visit\s(.+?)$', msg.body.lower())
@@ -312,10 +326,12 @@ def check_pm(msgs):
                 id = id = "t1_%s" % m.group(1)
                 c = r.get_info(thing_id = id)
             if c is not None and c.subreddit.display_name.lower() == SUBREDDIT.lower() and (msg.author.name == c.author.name or msg.author.name in mod_list or msg.author.name == 'mrmin123'):
-                log_msg("Revisiting %s under %s's request" % (m.group(1), msg.author.name))
+                log_msg("Revisiting %s under %s's request" % (c.permalink, msg.author.name))
+                update_db(log_coll, stat_coll, 'REVISIT', c.permalink, msg.author.name)
                 check_posts([c], temp_type, True)
             else:
                 log_msg("Incorrect revisit request for %s by %s" % (m.group(1), msg.author.name))
+                update_db(log_coll, stat_coll, 'REVISIT_BAD', m.group(1), msg.author.name)
 
         # check for moderator halt request
         if msg.author.name in mod_list or msg.author.name == 'mrmin123':
@@ -323,6 +339,7 @@ def check_pm(msgs):
             if m:
                 msg.mark_as_read()
                 log_error("Bot halt requested by %s" % msg.author.name)
+                update_db(log_coll, stat_coll, 'HALT', '', msg.author.name)
                 exit()
         msg.mark_as_read()
         sleep(SLEEP)
@@ -342,9 +359,11 @@ def create_post(post, msg, post_type, msg_type):
             if post_type == 'SUBMISSIONS':
                 c = post.add_comment(m + signature)
                 log_msg("Made a %s comment in %s" % (msg_type, post.short_link))
+                update_db(log_coll, stat_coll, msg_type, post.short_link, '')
             elif post_type == 'COMMENTS':
                 c = post.reply(m + signature)
-                log_msg("Made a %s reply in %s" % (msg_type, post.permalink))
+                log_msg("Made a %s reply to %s" % (msg_type, post.permalink))
+                update_db(log_coll, stat_coll, msg_type, post.permalink, '')
             sig_temp = signature_add.replace('___CID___', str(c.id))
             sig_temp = sig_temp.replace('___PID___', str(c.link_id)[3:])
             sleep(SLEEP)
@@ -355,15 +374,17 @@ def create_post(post, msg, post_type, msg_type):
     except Exception as e:
         log_error(e)
 
-def delete_post(post, type):
+def delete_post(post, type, parent_url, user):
     """
     function for deleting own post
     """
     try:
         if type == 'SCORE':
-            log_msg("Deleting post under %s due to downvote" % post.parent_id)
+            log_msg("Deleting post under %s due to downvote" % parent_url)
+            update_db(log_coll, stat_coll, 'DEL_SCORE', parent_url, user)
         if type == 'PM':
-            log_msg("Deleting post under %s due to PM request" % post.parent_id)
+            log_msg("Deleting post under %s due to PM request from %s" % (parent_url, user))
+            update_db(log_coll, stat_coll, 'DEL_PM', parent_url, user)
         post.delete()
         sleep(SLEEP)
     except Exception as e:
@@ -406,6 +427,16 @@ except Exception as e:
     log_error(e)
     exit()
 
+try:
+    mdb = pymongo.MongoClient(MONGO_URL, MONGO_PORT)
+    db = mdb[MONGO_DB]
+    log_coll = db['log']
+    stat_coll = db['stat']
+    reset_db(stat_coll)
+except Exception as e:
+    log_error(e)
+    exit()
+
 # begin primary bot loop
 RUNNING = True
 while RUNNING:
@@ -432,8 +463,9 @@ while RUNNING:
         update_queue_file(processed_comments_file, processed_comments)
 
         # clean up stored PADX data
-        while len(processed_monsters) > 200:
-            processed_monsters.popleft()
+        while len(processed_monsters) > MONSTER_LIMIT:
+            remove_id = processed_monsters.popleft()
+            del padx_storage[remove_id]
     except requests.exceptions.HTTPError:
         log_error("HTTP Error: Gateway timeout/Origin Down")
         sleep(SLEEP_LONG)

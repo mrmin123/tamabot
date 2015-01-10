@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>{{ title }}</title>
+		<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Noto+Sans:normal,bold" type="text/css">
+		<link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/base-min.css">
+		<link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/grids-responsive-min.css">
+		<link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/forms-min.css">
+		<link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.5.0/buttons-min.css">
+		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
+		<link rel="stylesheet" href="pure.css">
+		<link rel="stylesheet" href="style.css">
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/sockjs/0.3.4/sockjs.min.js"></script>
+		<script src="https://code.highcharts.com/highcharts.js"></script>
+		<script>
+			$(function() {
+				var statsConn = new SockJS('/tamabot/stats');
+				var graphConn = new SockJS('/tamabot/graph');
+				var logsConn = new SockJS('/tamabot/logs');
+				var displayed_logs = [];
+				var urlregex = /^(?:http:\/\/)?(?:www\.)?redd(?:\.)?it(?:\.com)?\/(?:r\/PuzzleAndDragons\/)?(?:comments)?(?:\/)?([\w]{6,8})?(?:\/)?(?:[\w]+)?(?:\/)?([\w]{6,8})?(?:\/)?$/;
+				var graph_data;
+
+				statsConn.onmessage = function(e) {
+					var data = $.parseJSON(e.data);
+					for (key in data) {
+						$('#' + key).text(data[key]);
+					}
+					logsConn.send('');
+				}
+
+				graphConn.onmessage = function(e) {
+					graph_data = $.parseJSON(e.data);
+					$('#graph_container').highcharts({
+						title: { text: null },
+						yAxis: { title: { text: 'count' } },
+						xAxis: { categories: graph_data['dates'] },
+						chart: { backgroundColor: '#f5f5f5' },
+						series: [{
+							type: 'column',
+							name: 'monster table',
+							data: graph_data['monster_table']
+						}, {
+							type: 'column',
+							name: 'flair',
+							data: graph_data['flair_posts']
+						}, {
+							type: 'line',
+							name: 'revisited',
+							data: graph_data['revisits'],
+							color: '#d75c37',
+							marker: {
+								symbol: 'circle',
+								fillColor: '#d75c37',
+								lineWidth: 1,
+								lineColor: '#d75c37'
+							}
+						}, {
+							type: 'line',
+							name: 'ignored',
+							data: graph_data['ignores'],
+							color: '#67727a',
+							marker: {
+								symbol: 'circle',
+								fillColor: '#67727a',
+								lineWidth: 1,
+								lineColor: '#67727a'
+							}
+						}, {
+							type: 'line',
+							name: 'deleted',
+							data: graph_data['deletes'],
+							color: '#6991ac',
+							marker: {
+								symbol: 'circle',
+								fillColor: '#6991ac',
+								lineWidth: 1,
+								lineColor: '#6991ac'
+							}
+						}]
+					});
+				}
+
+				logsConn.onmessage = function(e) {
+					var data = $.parseJSON(e.data);
+					for (var i = data.length -1; i >= 0; i--) {
+						if (displayed_logs.indexOf(data[i][0]) == -1) {
+							$('.loading').remove();
+							$(data[i][1]).prependTo('#log').hide().slideDown(1000);
+							$("#log").children().slice(25).fadeOut(1000, function() {
+								$("#log").children().slice(25).remove();
+							});
+							displayed_logs.unshift(data[i][0]);
+							displayed_logs.slice(0, 25);
+						}
+					}
+				}
+
+				function check_input_url() {
+					var temp = $('#input_url').val();
+					if (temp != "") {
+						var match = urlregex.exec(temp);
+						if (match == null) {
+							return 0;
+						}
+						if (typeof match[2] !== 'undefined') {
+							return match[2];
+						}
+						else if (typeof match[1] !== 'undefined') {
+							return match[1];
+						}
+						else {
+							return 0;
+						}
+					}
+					else {
+						return false;
+					}
+				}
+
+				function bad_input_url() {
+					$('#input_url').val('');
+					$('#input_url').attr('placeholder', 'invalid URL');
+				}
+
+				function reset_input_url() {
+					$('#input_url').attr('placeholder', 'url/permalink to post/comment here, then choose an action below');
+				}
+
+				$('#input_url').focus(function() {
+					reset_input_url();
+				});
+
+				$('#action_delete').click(function(e) {
+					var temp = check_input_url();
+					if (temp != 0) {
+						window.open('http://www.reddit.com/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+' + temp, '_blank');
+						reset_input_url();
+						e.preventDefault();
+					}
+					else if (temp === 0) {
+						bad_input_url();
+						e.preventDefault();
+					}
+					else if (temp === false) {}
+				});
+
+				$('#action_ignore').click(function(e) {
+					var temp = check_input_url();
+					if (temp != 0) {
+						window.open('http://www.reddit.com/message/compose?to=tamabot&subject=tamabot%20ignore&message=%2Bignore+' + temp, '_blank');
+						reset_input_url();
+						e.preventDefault();
+					}
+					else if (temp === 0) {
+						bad_input_url();
+						e.preventDefault();
+					}
+					else if (temp === false) {}
+				});
+
+				$('#action_revisit').click(function(e) {
+					var temp = check_input_url();
+					if (temp != 0) {
+						window.open('http://www.reddit.com/message/compose?to=tamabot&subject=tamabot%20visit&message=%2Bvisit+' + temp, '_blank');
+						reset_input_url();
+						e.preventDefault();
+					}
+					else if (temp === 0) {
+						bad_input_url();
+						e.preventDefault();
+					}
+					else if (temp === false) {}
+				});
+
+				reset_input_url();
+
+				setInterval(function() {
+					statsConn.send('');
+				}, 20000)
+			});
+		</script>
+	</head>
+	<body>
+		<div class="pure-g">
+			<div class="pure-u-1 pure-u-md-6-24"></div>
+			<div class="pure-u-1 pure-u-md-12-24">
+				<div id="header">
+					<h1><span>{{ title }}</span></h1>
+				</div>
+				<h2 id="first"><i class="fa fa-link"></i> links</h2>
+					<div id="links">
+						<a href="http://reddit.com/u/tamabot/"><i class="fa fa-reddit"></i> /u/tamabot</a> |
+						<a href="https://github.com/mrmin123/tamabot"><i class="fa fa-github"></i> github</a> |
+						<a href="http://www.reddit.com/message/compose?to=mrmin123&subject=tamabot"><i class="fa fa-envelope"></i> contact /u/mrmin123</a>
+					</div>
+				<h2><i class="fa fa-comment-o"></i> tamabot pm helper</h2>
+				<div id="pm_helper" class="pure-g">
+					<form class="pure-form">
+						<fieldset>
+							<input id="input_url" type="text" class="pure-input-1" placeholder="" required>
+							<div class="pure-u-sm-1 pure-u-md-1-3"><button id="action_delete" type="submit" class="pure-button pure-input-1 pure-button-primary">delete</button></div><!--
+							--><div class="pure-u-sm-1 pure-u-md-1-3"><button id="action_ignore" type="submit" class="pure-button pure-input-1 pure-button-primary">ignore</button></div><!--
+							--><div class="pure-u-sm-1 pure-u-md-1-3"><button id="action_revisit" type="submit" class="pure-button pure-input-1 pure-button-primary">(re)visit</button></div>
+						</fieldset>
+					</form>
+				</div>
+				<h2><i class="fa fa-calendar"></i> all-time stats as of 2015-01-08</h2>
+				<div class="pure-g">
+					<div class="pure-u-sm-2-3 pure-u-md-9-24 pure-u-lg-6-24 grid"><span>monster tables posts:</span></div><!--
+					--><div class="pure-u-sm-1-3 pure-u-md-3-24 pure-u-lg-2-24 grid"><span id="post_monster"></span></div><!--
+					--><div class="pure-u-sm-2-3 pure-u-md-9-24 pure-u-lg-6-24 grid"><span>split monster tables:</span></div><!--
+					--><div class="pure-u-sm-1-3 pure-u-md-3-24 pure-u-lg-2-24 grid"><span id="post_split"></span></div><!--
+					--><div class="pure-u-sm-2-3 pure-u-md-9-24 pure-u-lg-6-24 grid"><span>flair posts:</span></div><!--
+					--><div class="pure-u-sm-1-3 pure-u-md-3-24 pure-u-lg-2-24 grid"><span id="post_flair"></span></div><!--
+					--><div class="pure-u-sm-2-3 pure-u-md-9-24 pure-u-lg-6-24 grid"><span>posts (re)visited:</span></div><!--
+					--><div class="pure-u-sm-1-3 pure-u-md-3-24 pure-u-lg-2-24 grid"><span id="post_revisit"></span></div><!--
+					--><div class="pure-u-sm-2-3 pure-u-md-9-24 pure-u-lg-6-24 grid"><span>posts ignored:</span></div><!--
+					--><div class="pure-u-sm-1-3 pure-u-md-3-24 pure-u-lg-2-24 grid"><span id="ignore_post"></span></div><!--
+					--><div class="pure-u-sm-2-3 pure-u-md-9-24 pure-u-lg-6-24 grid"><span><span>posts deleted:</span></div><!--
+					--><div class="pure-u-sm-1-3 pure-u-md-3-24 pure-u-lg-2-24 grid"><span id="del_pm"></span></div>
+				</div>
+				<h2><i class="fa fa-clock-o"></i> current run stats (started <span id="run"></span>)</h2>
+				<div class="pure-g">
+					<div class="pure-u-sm-2-3 pure-u-md-9-24 pure-u-lg-6-24 grid"><span>monster tables posts:</span></div><!--
+					--><div class="pure-u-sm-1-3 pure-u-md-3-24 pure-u-lg-2-24 grid"><span id="post_monster_run"></span></div><!--
+					--><div class="pure-u-sm-2-3 pure-u-md-9-24 pure-u-lg-6-24 grid"><span>split monster tables:</span></div><!--
+					--><div class="pure-u-sm-1-3 pure-u-md-3-24 pure-u-lg-2-24 grid"><span id="post_split_run"></span></div><!--
+					--><div class="pure-u-sm-2-3 pure-u-md-9-24 pure-u-lg-6-24 grid"><span>flair posts:</span></div><!--
+					--><div class="pure-u-sm-1-3 pure-u-md-3-24 pure-u-lg-2-24 grid"><span id="post_flair_run"></span></div><!--
+					--><div class="pure-u-sm-2-3 pure-u-md-9-24 pure-u-lg-6-24 grid"><span>posts (re)visited:</span></div><!--
+					--><div class="pure-u-sm-1-3 pure-u-md-3-24 pure-u-lg-2-24 grid"><span id="post_revisit_run"></span></div><!--
+					--><div class="pure-u-sm-2-3 pure-u-md-9-24 pure-u-lg-6-24 grid"><span>posts ignored:</span></div><!--
+					--><div class="pure-u-sm-1-3 pure-u-md-3-24 pure-u-lg-2-24 grid"><span id="ignore_post_run"></span></div><!--
+					--><div class="pure-u-sm-2-3 pure-u-md-9-24 pure-u-lg-6-24 grid"><span><span>posts deleted:</span></div><!--
+					--><div class="pure-u-sm-1-3 pure-u-md-3-24 pure-u-lg-2-24 grid"><span id="del_pm_run"></span></div>
+				</div>
+				<h2><i class="fa fa-bar-chart"></i> weekly chart</h2>
+				<div id="graph_container"></div>
+				<h2 id="last"><i class="fa fa-list"></i> live log (20sec refresh)</h2>
+				<div id="log">
+					<i class="loading fa fa-circle-o-notch fa-spin"></i>
+				</div>
+				<div id="tamabot2">
+					<img src="tamabot2.png" />
+				</div>
+			</div>
+			<div class="pure-u-1 pure-u-md-6-24"></div>
+		</div>
+	</body>
+</html>
