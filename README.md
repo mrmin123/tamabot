@@ -19,5 +19,23 @@ tamabot
 * [PRAW](https://praw.readthedocs.org/)
 * [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
 
+tamabot frontend
+================
+##Features
+* Responsive layout
+* Live update of stats and log
+
+##Dependencies
+* [Tornado](http://www.tornadoweb.org/en/stable/)
+* [PyMongo](http://api.mongodb.org/python/current/)
+* [pytz](http://pytz.sourceforge.net/)
+* [SockJS](http://sockjs.org/)
+* [sockjs-tornado](https://github.com/mrjoes/sockjs-tornado)
+* [Pure.css](http://purecss.io/)
+* [Noto Sans](http://www.google.com/fonts/specimen/Noto+Sans)
+* [Font Awesome](http://fortawesome.github.io/Font-Awesome/)
+* [jQuery](http://jquery.com/)
+* [Highcharts](http://www.highcharts.com/)
+
 ##Contact
 Please PM [/u/mrmin123](http://www.reddit.com/message/compose?to=mrmin123&subject=tamabot) regarding any inquiries or feedback on tamabot.
