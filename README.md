@@ -2,8 +2,8 @@ tamabot
 =======
 [/r/PuzzleAndDragons](http://www.reddit.com/r/PuzzleAndDragons) helper bot. See it in action as [/u/tamabot](http://www.reddit.com/user/tamabot/) and at its [homepage](http://minyoung.ch/tamabot/).
 
-#tamabot
-##Features
+##tamabot
+###Features
 * Finds posts with [Iconified](http://tamadra.com/iconify) monster icons (even ones not yet supported by subreddit styles) and/or [PADX Team Simulator](http://www.puzzledragonx.com/en/simulator.asp) links, grab relevant monster information from [PADX](http://www.puzzledragonx.com/), and posts a reply with the information in a table
 * Automatically breaks up expanded monster information table posts into chunks if they become too long
 * Monster table is 'hover-to-view' to be less intrusive via subreddit CSS
@@ -15,17 +15,17 @@ tamabot
 * Subreddit mods have ability to delete, ignore thread, re-visit, and shutdown the bot via PM
 * Keeps track of ignored threads and processed submissions and comments in case bot crashes and reboots to avoid unnecessary posts
 
-##Dependencies
+###Dependencies
 * Tested on Python 2.7.6
 * [PRAW](https://praw.readthedocs.org/)
 * [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/)
 
-#tamabot frontend
-##Features
+##tamabot frontend
+###Features
 * Responsive layout
 * Live update of stats and log
 
-##Dependencies
+###Dependencies
 * [Tornado](http://www.tornadoweb.org/en/stable/)
 * [PyMongo](http://api.mongodb.org/python/current/)
 * [pytz](http://pytz.sourceforge.net/)
