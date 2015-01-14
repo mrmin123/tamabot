@@ -312,8 +312,14 @@ def check_pm(msgs):
                     temp_msg = "%s\nI am ignoring any new posts in this thread by OP/moderator's request! Please request this post to be deleted to un-ignore.\n" % intro
                     create_post(c, [temp_msg], 'SUBMISSIONS', 'IGNORE_POST')
             else:
-                log_warning("Incorrect ignore request from %s for %s" % (msg.author.name, m.group(1)))
-                update_db(log_coll, stat_coll, 'IGNORE_BAD', m.group(1), msg.author.name)
+                if c.short_link is not None:
+                    tempLink = c.short_link
+                elif c.permalink is not None:
+                    tempLink = c.permalink
+                else:
+                    tempLink = m.group(1)
+                log_warning("Incorrect ignore request from %s for %s" % (msg.author.name, tempLink))
+                update_db(log_coll, stat_coll, 'IGNORE_BAD', tempLink, msg.author.name)
 
         # check for revisit
         m = re.search(ur'^\+visit\s(.+?)$', msg.body.lower())
@@ -330,8 +336,14 @@ def check_pm(msgs):
                 update_db(log_coll, stat_coll, 'REVISIT', c.permalink, msg.author.name)
                 check_posts([c], temp_type, True)
             else:
-                log_msg("Incorrect revisit request for %s by %s" % (m.group(1), msg.author.name))
-                update_db(log_coll, stat_coll, 'REVISIT_BAD', m.group(1), msg.author.name)
+                if c.short_link is not None:
+                    tempLink = c.short_link
+                elif c.permalink is not None:
+                    tempLink = c.permalink
+                else:
+                    tempLink = m.group(1)
+                log_msg("Incorrect revisit request for %s by %s" % (tempLink, msg.author.name))
+                update_db(log_coll, stat_coll, 'REVISIT_BAD', tempLink, msg.author.name)
 
         # check for moderator halt request
         if msg.author.name in mod_list or msg.author.name == 'mrmin123':
