@@ -170,7 +170,7 @@ h2#last {
 
 #log .log_line > * {
 	text-indent: 0.1em;
-
+	overflow: hidden;
 }
 
 #log .log_line .ts {
