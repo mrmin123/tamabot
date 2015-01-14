@@ -13,23 +13,66 @@ class MainHandler(web.RequestHandler):
     def get(self):
         self.render("template.html", title="tamabot")
 
-class StatsConnection(SockJSConnection):
-    coll = None
+class DBConnection(SockJSConnection):
+    stat_coll = None
+    log_coll = None
     def on_open(self, info):
         mdb = pymongo.MongoClient(MONGO_URL, MONGO_PORT)
         db = mdb[MONGO_DB]
-        self.coll = db['stat']
-        self.update_stats()
+        self.stat_coll = db['stat']
+        self.log_coll = db['log']
+        self.get_db_vals()
     def on_message(self, msg):
-        self.update_stats()
-    def update_stats(self):
+        self.get_db_vals()
+    def get_db_vals(self):
+        # empty data
         data = {}
-        temp = self.coll.find()
+        data['stats'], data['logs'] = {}, []
+
+        # get stats from db
+        temp = self.stat_coll.find()
         for line in temp:
             if line['field'] != 'run':
-                data[line['field']] = locale.format('%d', line['count'], grouping=True)
+                data['stats'][line['field']] = locale.format('%d', line['count'], grouping=True)
             else:
-                data[line['field']] = utc.localize(line['date']).astimezone(pst).strftime('%Y-%m-%d')
+                data['stats'][line['field']] = utc.localize(line['date']).astimezone(pst).strftime('%Y-%m-%d')
+
+        # get logs from db
+        temp = self.log_coll.find({}, limit=25).sort('date', pymongo.DESCENDING)
+        for line in temp:
+            timestamp = utc.localize(line['date']).astimezone(pst).strftime('%Y-%m-%d %H:%M:%S')
+            message = ""
+            if line['type'] == 'MONSTER TABLE':
+                message = "<span class='ts'>%s :::</span><span>made a monster table post under <a href='%s'>%s</a></span>" % (timestamp, line['url'], line['url'])
+            elif line['type'] == 'FLAIR ID':
+                message = "<span class='ts'>%s :::</span><span>made a flair id post under <a href='%s'>%s</a></span>" % (timestamp, line['url'], line['url'])
+            elif line['type'] == 'SPLIT':
+                message = "<span class='ts'>%s :::</span><span>message too long... splitting!</span>" % (timestamp)
+            elif line['type'] == 'REVISIT':
+                message = "<span class='ts'>%s :::</span><span>(re)visiting <a href='%s'>%s</a> under <a href='http://reddit.com/u/%s'>%s</a>'s request</span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
+            elif line['type'] == 'REVISIT_BAD':
+                if 'http' in line['url']:
+                    message = "<span class='ts'>%s :::</span><span>bad revisit request for <a href='%s'>%s</a> by <a href='http://reddit.com/u/%s'>%s</a></span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
+                else:
+                    message = "<span class='ts'>%s :::</span><span>bad revisit request for %s by <a href='http://reddit.com/u/%s'>%s</a></span>" % (timestamp, line['url'], line['user'], line['user'])
+            elif line['type'] == 'IGNORE_PM':
+                message = "<span class='ts'>%s :::</span><span>ignoring posts under <a href='%s'>%s</a> by <a href='http://reddit.com/u/%s'>%s</a>'s request</span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
+            elif line['type'] == 'IGNORE_POST':
+                message = "<span class='ts'>%s :::</span><span>made an ignore post under <a href='%s'>%s</a></span>" % (timestamp, line['url'], line['url'])
+            elif line['type'] == 'IGNORE_BAD':
+                if 'http' in line['url']:
+                    message = "<span class='ts'>%s :::</span><span>bad ignore request for <a href='%s'>%s</a> by <a href='http://reddit.com/u/%s'>%s</a></span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
+                else:
+                    message = "<span class='ts'>%s :::</span><span>bad ignore request for %s by <a href='http://reddit.com/u/%s'>%s</a></span>" % (timestamp, line['url'], line['user'], line['user'])
+            elif line['type'] == 'DEL_PM':
+                message = "<span class='ts'>%s :::</span><span>deleting post under <a href='%s'>%s</a> by <a href='http://reddit.com/u/%s'>%s</a>'s request</span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
+            elif line['type'] == 'DEL_BAD':
+                message = "<span class='ts'>%s :::</span><span>bad delete request for <a href='%s'>%s</a> by <a href='http://reddit.com/u/%s'>%s</a></span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
+            elif line['type'] == 'UNIGNORE':
+                message = "<span class='ts'>%s :::</span><span>unignoring <a href='%s'>%s</a> by <a href='http://reddit.com/u/%s'>%s</a>'s request</span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
+            elif line['type'] == 'HALT':
+                message = "<span class='ts'>%s :::</span><span>bot halt requested by <a href='http://reddit.com/u/%s'>%s</a></span>" % (timestamp, line['user'], line['user'])
+            data['logs'].append([str(line['_id']), "<div class='log_line'>%s</div>" % (message)])
         self.send(json.dumps(data))
     def on_close(self):
         mdb.close()
@@ -69,57 +112,18 @@ class GraphConnection(SockJSConnection):
                 data['deletes'][data['dates'].index(timestamp)] = data['deletes'][data['dates'].index(timestamp)] + 1
             elif line['type'] == 'REVISIT':
                 data['revisits'][data['dates'].index(timestamp)] = data['revisits'][data['dates'].index(timestamp)] + 1
+        del data['dates'][0]
+        del data['monster_table'][0]
+        del data['flair_posts'][0]
+        del data['ignores'][0]
+        del data['deletes'][0]
+        del data['revisits'][0]
         self.send(json.dumps(data))
     def on_close(self):
         mdb.close()
 
-class LogsConnection(SockJSConnection):
-    coll = None
-    def on_open(self, info):
-        mdb = pymongo.MongoClient(MONGO_URL, MONGO_PORT)
-        db = mdb[MONGO_DB]
-        self.coll = db['log']
-        self.update_log()
-    def on_message(self, msg):
-        self.update_log()
-    def update_log(self):
-        raw_log = []
-        raw_log = self.coll.find({}, limit=25).sort('date', pymongo.DESCENDING)
-        data = []
-        for line in raw_log:
-            timestamp = utc.localize(line['date']).astimezone(pst).strftime('%Y-%m-%d %H:%M:%S')
-            message = ""
-            if line['type'] == 'MONSTER TABLE':
-                message = "<span class='ts'>%s :::</span><span>made a monster table post under <a href='%s'>%s</a></span>" % (timestamp, line['url'], line['url'])
-            elif line['type'] == 'FLAIR ID':
-                message = "<span class='ts'>%s :::</span><span>made a flair id post under <a href='%s'>%s</a></span>" % (timestamp, line['url'], line['url'])
-            elif line['type'] == 'SPLIT':
-                message = "<span class='ts'>%s :::</span><span>message too long... splitting!</span>" % (timestamp)
-            elif line['type'] == 'REVISIT':
-                message = "<span class='ts'>%s :::</span><span>(re)visiting <a href='%s'>%s</a> under <a href='http://reddit.com/u/%s'>%s</a>'s request</span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
-            elif line['type'] == 'REVISIT_BAD':
-                message = "<span class='ts'>%s :::</span><span>bad revisit request for <a href='%s'>%s</a> by <a href='http://reddit.com/u/%s'>%s</a></span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
-            elif line['type'] == 'IGNORE_PM':
-                message = "<span class='ts'>%s :::</span><span>ignoring posts under <a href='%s'>%s</a> by <a href='http://reddit.com/u/%s'>%s</a>'s request</span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
-            elif line['type'] == 'IGNORE_POST':
-                message = "<span class='ts'>%s :::</span><span>made an ignore post under <a href='%s'>%s</a></span>" % (timestamp, line['url'], line['url'])
-            elif line['type'] == 'DEL_PM':
-                message = "<span class='ts'>%s :::</span><span>deleting post under <a href='%s'>%s</a> by <a href='http://reddit.com/u/%s'>%s</a>'s request</span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
-            elif line['type'] == 'DEL_BAD':
-                message = "<span class='ts'>%s :::</span><span>bad delete request for <a href='%s'>%s</a> by <a href='http://reddit.com/u/%s'>%s</a></span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
-            elif line['type'] == 'UNIGNORE':
-                message = "<span class='ts'>%s :::</span><span>unignoring <a href='%s'>%s</a> by <a href='http://reddit.com/u/%s'>%s</a>'s request</span>" % (timestamp, line['url'], line['url'], line['user'], line['user'])
-            elif line['type'] == 'HALT':
-                message = "<span class='ts'>%s :::</span><span>bot halt requested by <a href='http://reddit.com/u/%s'>%s</a></span>" % (timestamp, line['user'], line['user'])
-            data.append([str(line['_id']), "<div class='log_line'>%s</div>" % (message)])
-        self.send(json.dumps(data))
-    def on_close(self):
-        mdb.close()
-
-
-StatsRouter = SockJSRouter(StatsConnection, '/tamabot/stats')
+DBRouter = SockJSRouter(DBConnection, '/tamabot/db')
 GraphRouter = SockJSRouter(GraphConnection, '/tamabot/graph')
-LogsRouter = SockJSRouter(LogsConnection, '/tamabot/logs')
 
 settings = {
     "static_path": os.path.join(os.path.dirname(__file__), "static")
@@ -131,7 +135,7 @@ app = web.Application([
     (r'/tamabot/(style\.css)', web.StaticFileHandler, dict(path=settings['static_path'])),
     (r'/tamabot/(tamabot\.png)', web.StaticFileHandler, dict(path=settings['static_path'])),
     (r'/tamabot/(tamabot2\.png)', web.StaticFileHandler, dict(path=settings['static_path'])),
-] + StatsRouter.urls + GraphRouter.urls + LogsRouter.urls, **settings)
+] + DBRouter.urls + GraphRouter.urls, **settings)
 
 server = httpserver.HTTPServer(app)
 server.listen(8008)
