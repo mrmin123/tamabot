@@ -17,23 +17,39 @@
 		<script src="https://code.highcharts.com/highcharts.js"></script>
 		<script>
 			$(function() {
-				var statsConn = new SockJS('/tamabot/stats');
+				var dbConn = new SockJS('/tamabot/db');
 				var graphConn = new SockJS('/tamabot/graph');
-				var logsConn = new SockJS('/tamabot/logs');
 				var displayed_logs = [];
 				var urlregex = /^(?:http:\/\/)?(?:www\.)?redd(?:\.)?it(?:\.com)?\/(?:r\/PuzzleAndDragons\/)?(?:comments)?(?:\/)?([\w]{6,8})?(?:\/)?(?:[\w]+)?(?:\/)?([\w]{6,8})?(?:\/)?$/;
-				var graph_data;
 
-				statsConn.onmessage = function(e) {
-					var data = $.parseJSON(e.data);
-					for (key in data) {
-						$('#' + key).text(data[key]);
+				dbConn.onopen = function() {
+					dbConn.send('');
+				}
+
+				dbConn.onmessage = function(e) {
+					var raw_data = $.parseJSON(e.data);
+					var stats_data = raw_data['stats'];
+					var logs_data = raw_data['logs'];
+
+					for (key in stats_data) {
+						$('#' + key).text(stats_data[key]);
 					}
-					logsConn.send('');
+
+					for (var i = logs_data.length -1; i >= 0; i--) {
+						if (displayed_logs.indexOf(logs_data[i][0]) == -1) {
+							$('.loading').remove();
+							$(logs_data[i][1]).prependTo('#log').hide().slideDown(1000);
+							$("#log").children().slice(25).fadeOut(1000, function() {
+								$("#log").children().slice(25).remove();
+							});
+							displayed_logs.unshift(logs_data[i][0]);
+							displayed_logs.slice(0, 25);
+						}
+					}
 				}
 
 				graphConn.onmessage = function(e) {
-					graph_data = $.parseJSON(e.data);
+					var graph_data = $.parseJSON(e.data);
 					$('#graph_container').highcharts({
 						title: { text: null },
 						yAxis: { title: { text: 'count' } },
@@ -82,21 +98,6 @@
 							}
 						}]
 					});
-				}
-
-				logsConn.onmessage = function(e) {
-					var data = $.parseJSON(e.data);
-					for (var i = data.length -1; i >= 0; i--) {
-						if (displayed_logs.indexOf(data[i][0]) == -1) {
-							$('.loading').remove();
-							$(data[i][1]).prependTo('#log').hide().slideDown(1000);
-							$("#log").children().slice(25).fadeOut(1000, function() {
-								$("#log").children().slice(25).remove();
-							});
-							displayed_logs.unshift(data[i][0]);
-							displayed_logs.slice(0, 25);
-						}
-					}
 				}
 
 				function check_input_url() {
@@ -179,8 +180,8 @@
 				reset_input_url();
 
 				setInterval(function() {
-					statsConn.send('');
-				}, 20000)
+					dbConn.send('');
+				}, 20000);
 			});
 		</script>
 	</head>
