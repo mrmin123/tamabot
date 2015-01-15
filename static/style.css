@@ -170,11 +170,15 @@ h2#last {
 
 #log .log_line > * {
 	text-indent: 0.1em;
+}
+
+#log .log_line span {
 	overflow: hidden;
 }
 
 #log .log_line .ts {
 	white-space: nowrap;
+	overflow: visible;
 }
 
 #tamabot2 {
