@@ -7,6 +7,8 @@ from config import MONGO_URL, MONGO_PORT, MONGO_DB
 utc = pytz.utc
 pst = pytz.timezone('US/Pacific-New')
 locale.setlocale(locale.LC_ALL, 'en_US.utf8')
+LOG_LIMIT = 25
+GRAPH_DAYS = 14 + 1
 
 class MainHandler(web.RequestHandler):
     @web.asynchronous
@@ -38,7 +40,7 @@ class DBConnection(SockJSConnection):
                 data['stats'][line['field']] = utc.localize(line['date']).astimezone(pst).strftime('%Y-%m-%d')
 
         # get logs from db
-        temp = self.log_coll.find({}, limit=25).sort('date', pymongo.DESCENDING)
+        temp = self.log_coll.find({}, limit=LOG_LIMIT).sort('date', pymongo.DESCENDING)
         for line in temp:
             timestamp = utc.localize(line['date']).astimezone(pst).strftime('%Y-%m-%d %H:%M:%S')
             message = ""
@@ -89,9 +91,9 @@ class GraphConnection(SockJSConnection):
     def get_data(self):
         now = datetime.now()
         data = {}
-        data['dates'], data['monster_table'] = [0] * 8, [0] * 8
-        data['flair_posts'], data['ignores'] = [0] * 8, [0] * 8
-        data['deletes'], data['revisits'] = [0] * 8, [0] * 8
+        data['dates'], data['monster_table'] = [0] * GRAPH_DAYS, [0] * GRAPH_DAYS
+        data['flair_posts'], data['ignores'] = [0] * GRAPH_DAYS, [0] * GRAPH_DAYS
+        data['deletes'], data['revisits'] = [0] * GRAPH_DAYS, [0] * GRAPH_DAYS
 
         n = 0
         for i, e in reversed(list(enumerate(data['dates']))):
