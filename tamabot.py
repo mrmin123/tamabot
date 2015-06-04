@@ -350,7 +350,6 @@ def check_pm(msgs):
                 else:
                     tempLink = m.group(1)
                 log_msg("Incorrect revisit request for %s by %s" % (tempLink, msg.author.name))
-                break;
                 update_db(log_coll, stat_coll, 'REVISIT_BAD', tempLink, msg.author.name)
 
         # check for moderator halt request
