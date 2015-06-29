@@ -151,9 +151,9 @@ def table_output(padx, msg):
     if len(msg) == 0:
         msg.append(table_header)
     i = len(msg) - 1
-    sid = int(padx.id) / 50
-    cid = int(padx.id) % 50
-    msg_temp = "[](#i/s%02d/c%02d/%s \"%s\")|" % (sid, cid, padx.id, padx.name)
+    sid = int(padx.id) / 200
+    cid = int(padx.id) % 200
+    msg_temp = "[](#I/S%02d/C%03d/%s \"%s\")|" % (sid, cid, padx.id, padx.name)
     msg_temp = "%s#%s|**[%s](http://www.puzzledragonx.com/en/monster.asp?n=%s)**\n" % (msg_temp, padx.id, padx.name, padx.id)
     if len(padx.type_formatted) > 0:
         msg_temp = "%s%s" % (msg_temp, padx.type_formatted[0])
@@ -174,7 +174,7 @@ def table_output(padx, msg):
     if len(padx.awk) != 0:
         awk_temp = ""
         for a in padx.awk:
-            awk_temp = "%s[](#i/awoken/c%02d/) " % (awk_temp, a)
+            awk_temp = "%s[](#I/misc/C%03d/) " % (awk_temp, a)
         msg_temp = "%s |Awoken|%s\n" % (msg_temp, awk_temp)
     else:
         msg_temp = "%s |Awoken|None\n" % (msg_temp)
