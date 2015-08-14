@@ -20,7 +20,7 @@
 				var dbConn = new SockJS('/tamabot/db');
 				var graphConn = new SockJS('/tamabot/graph');
 				var displayed_logs = [];
-				var urlregex = /^(?:http:\/\/)?(?:www\.)?redd(?:\.)?it(?:\.com)?\/(?:r\/PuzzleAndDragons\/)?(?:comments)?(?:\/)?([\w]{6,8})?(?:\/)?(?:[\w]+)?(?:\/)?([\w]{6,8})?(?:\/)?$/;
+				var urlregex = /^(?:https?:\/\/)?(?:www\.)?redd(?:\.)?it(?:\.com)?\/(?:r\/PuzzleAndDragons\/)?(?:comments)?(?:\/)?([\w]{6,8})?(?:\/)?(?:[\w]+)?(?:\/)?([\w]{6,8})?(?:\/)?$/;
 
 				dbConn.onopen = function() {
 					dbConn.send('');
