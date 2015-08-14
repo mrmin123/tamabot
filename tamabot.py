@@ -201,6 +201,7 @@ def check_posts(posts, post_type, forced):
     checks for iconified monster links and 'flair in ID' messages
     """
     for post in posts:
+        called = False
         # skip if post made by bot
         if str(post.author) == USERNAME:
             continue
@@ -223,12 +224,16 @@ def check_posts(posts, post_type, forced):
         elif post_type == 'COMMENTS':
             temp_text = post.body.encode('utf-8')
 
-        # check ignore callout
+        # check callouts
         if temp_text.find('-/u/tamabot') > -1:
+            log_msg('Found negative callout')
             pass
+        if temp_text.find('/u/tamabot') > -1:
+            log_msg('Found callout request!')
+            called = True
 
         # check for Monster Icons
-        if temp_text.find('/u/tamabot') > -1 or forced is True:
+        if called is True or forced is True:
             n, temp_id, msg, listed = 0, 0, [], []
             for m in pattern_icon.finditer(temp_text):
                 e = m.groupdict()
@@ -252,7 +257,7 @@ def check_posts(posts, post_type, forced):
 
         # check for Flair Call
         m = re.search(pattern_flair_call, temp_text, re.I | re.U)
-        if m or temp_text.find('/u/tamabot/') > -1:
+        if m or called is True or forced is True:
             msg = []
             if post.author_flair_text is not None:
                 msg.append("%s\nFound %s's flair: **%s**\n" % (intro, str(post.author), post.author_flair_text))
