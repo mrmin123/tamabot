@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-import praw, re, requests, pymongo
+import praw, re, requests, pymongo, sys
 from config import USERNAME, PASSWORD, SUBREDDIT, MONGO_URL, MONGO_PORT, MONGO_DB
 from util import check_processed_posts, read_queue_file, update_queue_file, reset_db, update_db, log_msg, log_success, log_warning, log_error
 from collections import deque
 from time import sleep, strftime, gmtime
 from bs4 import BeautifulSoup
 
-user_agent = ("rPuzzlesAndDragonsBot 2.1 by /u/mrmin123")
+user_agent = ("rPuzzlesAndDragonsBot 2.2 by /u/mrmin123")
 
 # constants
 LIMIT = 15
@@ -15,6 +15,12 @@ SLEEP = 3
 SLEEP_LONG = 15
 MONSTER_LIMIT = 200
 MSG_LEN_LIMIT = 9600
+
+# check if debug mode
+debug = False
+if len(sys.argv) > 1:
+    if len(sys.argv[1] == '--debug'):
+        debug = True
 
 # globals
 mod_list = []
@@ -32,8 +38,6 @@ signature_add = "^Parent ^commentor ^can ^[delete](/message/compose?to=tamabot&s
 pattern_icon = re.compile('\[.*?]\((?:#m)?(?:#i)?\/?(?P<sid>s\d+)?\/?(?P<cid>c\d+)?\/(?P<id>\d+)?( "[^"]+?")?\)')
 pattern_padxsim = ur'puzzledragonx\.com/[^/]+/simulator.asp\?q=([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+'
 pattern_flair_call = ur'id (?:is )?(?:in )?(?:my )?flair'
-#pattern_flair_user = ur'(?<!\d)(\d{3})(?:[,\. ])?(\d{3})(?:[,\. ])?(\d{3})(?!\d)'
-pattern_flair_user = ur'(?<!\d)(\d{3})(\d{3})(\d{3})(?!\d)'
 
 loop = 0
 
@@ -248,12 +252,10 @@ def check_posts(posts, post_type, forced):
 
         # check for Flair Call
         m = re.search(pattern_flair_call, temp_text, re.I | re.U)
-        if m:
+        if m or temp_text.find('/u/tamabot/') > -1:
             msg = []
             if post.author_flair_text is not None:
-                #m2 = re.findall(pattern_flair_user, post.author_flair_text.encode('utf-8'), re.I | re.U)
-                temp_flair = re.sub(pattern_flair_user, flair_fix_repl, post.author_flair_text)
-                msg.append("%s\nFound %s's flair: **%s**\n" % (intro, str(post.author), temp_flair))
+                msg.append("%s\nFound %s's flair: **%s**\n" % (intro, str(post.author), post.author_flair_text))
                 create_post(post, msg, post_type, 'FLAIR ID')
 
         # update processed posts list
@@ -376,19 +378,26 @@ def create_post(post, msg, post_type, msg_type):
             else:
                 m = m.replace('___MTABLE___', "")
             if post_type == 'SUBMISSIONS':
-                c = post.add_comment(m + signature)
-                log_msg("Made a %s comment in %s" % (msg_type, post.short_link))
-                update_db(log_coll, stat_coll, msg_type, post.short_link, '')
+                if debug:
+                    print m + signature
+                else:
+                    c = post.add_comment(m + signature)
+                    log_msg("Made a %s comment in %s" % (msg_type, post.short_link))
+                    update_db(log_coll, stat_coll, msg_type, post.short_link, '')
             elif post_type == 'COMMENTS':
-                c = post.reply(m + signature)
-                log_msg("Made a %s reply to %s" % (msg_type, post.permalink))
-                update_db(log_coll, stat_coll, msg_type, post.permalink, '')
+                if debug:
+                    print m + signature
+                else:
+                    c = post.reply(m + signature)
+                    log_msg("Made a %s reply to %s" % (msg_type, post.permalink))
+                    update_db(log_coll, stat_coll, msg_type, post.permalink, '')
             sig_temp = signature_add.replace('___CID___', str(c.id))
             sig_temp = sig_temp.replace('___PID___', str(c.link_id)[3:])
-            sleep(SLEEP)
-            m_tmp = c.body.replace('^Processing...', sig_temp)
-            m_tmp = m_tmp.replace('&amp;#', '&#')
-            r.get_info(thing_id='t1_' + str(c.id)).edit(m_tmp)
+            if not debug:
+                sleep(SLEEP)
+                m_tmp = c.body.replace('^Processing...', sig_temp)
+                m_tmp = m_tmp.replace('&amp;#', '&#')
+                r.get_info(thing_id='t1_' + str(c.id)).edit(m_tmp)
             sleep(SLEEP_LONG)
     except Exception as e:
         log_error(e)
