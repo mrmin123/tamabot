@@ -7,19 +7,19 @@ from collections import deque
 from time import sleep, strftime, gmtime
 from bs4 import BeautifulSoup
 
-user_agent = ("rPuzzlesAndDragonsBot 2.2 by /u/mrmin123")
+user_agent = ("tamabot:rPuzzlesAndDragonsMonitor:v2.3 by /u/mrmin123")
 
 # constants
 LIMIT = 15
 SLEEP = 3
 SLEEP_LONG = 15
 MONSTER_LIMIT = 200
-MSG_LEN_LIMIT = 9600
+MSG_LEN_LIMIT = 9800
 
-# check if debug mode
+# check if debug mode (no posts, some feedback, more errors)
 debug = False
 if len(sys.argv) > 1:
-    if len(sys.argv[1] == '--debug'):
+    if sys.argv[1] == '--debug':
         debug = True
 
 # globals
@@ -32,12 +32,12 @@ processed_submissions_file = 'processed_submissions.txt'
 processed_comments_file = 'processed_comments.txt'
 ignored_submissions = deque([])
 ignored_submissions_file = 'ignored_submissions.txt'
-intro = "^This ^bot ^posts ^PADX ^info ^for ^monster ^icons, ^PADX ^teams, ^and ^user ^flairs.\n^Include ^the ^text ^'/u/tamabot/' ^to ^call ^me, ^or ^'-/u/tamabot' ^to ^make ^me ^ignore ^your ^post. ^For ^more ^information, ^please ^read ^the ^[Github](https://github.com/mrmin123/tamabot/) ^page.\n"
-signature = "\n^Processing... ^|| ^[Homepage](http://minyoung.ch/tamabot/)"
-signature_add = "^Parent ^commentor ^can ^[delete](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___CID___) ^this ^post ^|| ^OP ^can ^tell ^bot ^to ^[ignore](/message/compose?to=tamabot&subject=tamabot%20ignore&message=%2Bignore+___PID___) ^this ^thread ^and ^all ^child ^posts"
+intro = "&nbsp;\n\n^^I ^^post ^^PADX ^^info ^^for ^^monster ^^icons, ^^PADX ^^teams, ^^and ^^user ^^flairs! ^^Mention ^^'/u/tamabot/' ^^to ^^call ^^me, ^^or ^^'-/u/tamabot' ^^to ^^make ^^me ^^ignore ^^your ^^post. ^^For ^^more ^^information, ^^please ^^read ^^the ^^[Github](https://github.com/mrmin123/tamabot/) ^^page.\n"
+signature = "\n&nbsp;\n\n^^Processing... ^^|| ^^[Homepage](http://minyoung.ch/tamabot/)"
+signature_add = "^^Parent ^^commentor ^^can ^^[delete](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___CID___) ^^this ^^post, ^^and ^^OP ^^can ^^tell ^^bot ^^to ^^[ignore](/message/compose?to=tamabot&subject=tamabot%20ignore&message=%2Bignore+___PID___) ^^this ^^thread ^^and ^^all ^^child ^^posts"
 pattern_icon = re.compile('\[.*?]\((?:#m)?(?:#i)?\/?(?P<sid>s\d+)?\/?(?P<cid>c\d+)?\/(?P<id>\d+)?( "[^"]+?")?\)')
 pattern_padxsim = ur'puzzledragonx\.com/[^/]+/simulator.asp\?q=([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+'
-pattern_flair_call = ur'id (?:is )?(?:in )?(?:my )?flair'
+pattern_flair_call = ur'id (?:is )?(?:in )?(?:my )?(flair|flare)'
 
 loop = 0
 
@@ -183,7 +183,7 @@ def table_output(padx, msg):
     else:
         msg_temp = "%s |Awoken|None\n" % (msg_temp)
 
-    if len(msg[i]) + len(msg_temp) + len(signature) > MSG_LEN_LIMIT:
+    if len(msg[i]) + len(msg_temp) + len(signature) + len(signature_add) > MSG_LEN_LIMIT:
         log_msg("message long... splitting")
         update_db(log_coll, stat_coll, 'SPLIT', '', '')
         msg.append(table_header)
@@ -400,7 +400,7 @@ def create_post(post, msg, post_type, msg_type):
             sig_temp = sig_temp.replace('___PID___', str(c.link_id)[3:])
             if not debug:
                 sleep(SLEEP)
-                m_tmp = c.body.replace('^Processing...', sig_temp)
+                m_tmp = c.body.replace('^^Processing...', sig_temp)
                 m_tmp = m_tmp.replace('&amp;#', '&#')
                 r.get_info(thing_id='t1_' + str(c.id)).edit(m_tmp)
             sleep(SLEEP_LONG)
@@ -433,6 +433,8 @@ def get_mods(sub):
         mods = r.get_moderators(sub).children
         for mod in mods:
             mod_list.append(str(mod))
+        if debug:
+            print "mods: %s" % ', '.join(mod_list)
     except Exception as e:
         log_error(e)
 
@@ -485,15 +487,18 @@ while RUNNING:
 
         # check PMs for delete or halt requests
         check_pm(r.get_unread(limit = None))
-        update_queue_file(ignored_submissions_file, ignored_submissions)
+        if not debug:
+            update_queue_file(ignored_submissions_file, ignored_submissions)
 
         # check submissions/self posts
         check_posts(sub.get_new(limit = LIMIT), 'SUBMISSIONS', False)
-        update_queue_file(processed_submissions_file, processed_submissions)
+        if not debug:
+            update_queue_file(processed_submissions_file, processed_submissions)
 
         # check reply/comments
         check_posts(sub.get_comments(limit = LIMIT), 'COMMENTS', False)
-        update_queue_file(processed_comments_file, processed_comments)
+        if not debug:
+            update_queue_file(processed_comments_file, processed_comments)
 
         # clean up stored PADX data
         while len(processed_monsters) > MONSTER_LIMIT:
