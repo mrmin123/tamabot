@@ -32,9 +32,9 @@ processed_submissions_file = 'processed_submissions.txt'
 processed_comments_file = 'processed_comments.txt'
 ignored_submissions = deque([])
 ignored_submissions_file = 'ignored_submissions.txt'
-intro = "&nbsp;\n\n^^I ^^post ^^PADX ^^info ^^for ^^monster ^^icons, ^^PADX ^^teams, ^^and ^^user ^^flairs! ^^Mention ^^'/u/tamabot/' ^^to ^^call ^^me, ^^or ^^'-/u/tamabot' ^^to ^^make ^^me ^^ignore ^^your ^^post. ^^For ^^more ^^information, ^^please ^^read ^^the ^^[Github](https://github.com/mrmin123/tamabot/) ^^page.\n"
-signature = "\n&nbsp;\n\n^^Processing... ^^|| ^^[Homepage](http://minyoung.ch/tamabot/)"
-signature_add = "^^Parent ^^commentor ^^can ^^[delete](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___CID___) ^^this ^^post, ^^and ^^OP ^^can ^^tell ^^bot ^^to ^^[ignore](/message/compose?to=tamabot&subject=tamabot%20ignore&message=%2Bignore+___PID___) ^^this ^^thread ^^and ^^all ^^child ^^posts"
+signature_intro = "\n^^I ^^post ^^user ^^flairs! ^^Mention ^^'/u/tamabot/' ^^to ^^call ^^me, ^^or ^^'-/u/tamabot' ^^to ^^make ^^me ^^ignore ^^your ^^post.\n"
+signature = "\n&nbsp;\n\n^^Processing... ^^|| ^^[Homepage](http://minyoung.ch/tamabot/) || ^^[Github](https://github.com/mrmin123/tamabot/)"
+signature_add = "^^Parent ^^commentor ^^can [^^delete ^^this ^^post](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___CID___), ^^and ^^OP ^^can ^^tell ^^bot ^^to [^^ignore ^^this ^^entire ^^thread](/message/compose?to=tamabot&subject=tamabot%20ignore&message=%2Bignore+___PID___)"
 pattern_icon = re.compile('\[.*?]\((?:#m)?(?:#i)?\/?(?P<sid>s\d+)?\/?(?P<cid>c\d+)?\/(?P<id>\d+)?( "[^"]+?")?\)')
 pattern_padxsim = ur'puzzledragonx\.com/[^/]+/simulator.asp\?q=([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+'
 pattern_flair_call = ur'id (?:is )?(?:in )?(?:my )?(flair|flare)'
@@ -151,7 +151,7 @@ def table_output(padx, msg):
     post if the # of chars > 10000 (reddit limit); automatically apends bot
     signature
     """
-    table_header = "%s###### &#009;\n#### &#009;\n##### &#009;\n|||Expanded Monster Information ___MTABLE___ [hover to view]|\n:--:|--:|:--\n" % intro
+    table_header = "%s###### &#009;\n#### &#009;\n##### &#009;\n|||Expanded Monster Information ___MTABLE___ [hover to view]|\n:--:|--:|:--\n" % signature_intro
     if len(msg) == 0:
         msg.append(table_header)
     i = len(msg) - 1
@@ -228,39 +228,39 @@ def check_posts(posts, post_type, forced):
         if temp_text.find('-/u/tamabot') > -1:
             log_msg('Found negative callout')
             pass
-        if temp_text.find('/u/tamabot') > -1:
+        elif temp_text.find('/u/tamabot') > -1:
             log_msg('Found callout request!')
             called = True
 
-        # check for Monster Icons
-        if called is True or forced is True:
-            n, temp_id, msg, listed = 0, 0, [], []
-            for m in pattern_icon.finditer(temp_text):
-                e = m.groupdict()
-                if e['id'] is not None:
-                    temp_id = int(e['id'])
-                elif e['sid'] is not None and e['cid'] is not None:
-                    temp_id = (int(e['sid'][1:]) * 50) + int(e['cid'][1:]) + 1
-                n, listed, msg = process_monsters(temp_id, n, listed, msg)
+        # check for Monster Icons - disabled
+        # if called is True or forced is True:
+        #     n, temp_id, msg, listed = 0, 0, [], []
+        #     for m in pattern_icon.finditer(temp_text):
+        #         e = m.groupdict()
+        #         if e['id'] is not None:
+        #             temp_id = int(e['id'])
+        #         elif e['sid'] is not None and e['cid'] is not None:
+        #             temp_id = (int(e['sid'][1:]) * 50) + int(e['cid'][1:]) + 1
+        #         n, listed, msg = process_monsters(temp_id, n, listed, msg)
 
-            # check for PADX Team
-            m = re.findall(pattern_padxsim, temp_text, re.I | re.U)
-            if m:
-                for e in m:
-                    for i in e:
-                        temp_id = int(i)
-                        n, listed, msg = process_monsters(temp_id, n, listed, msg)
+        #     # check for PADX Team
+        #     m = re.findall(pattern_padxsim, temp_text, re.I | re.U)
+        #     if m:
+        #         for e in m:
+        #             for i in e:
+        #                 temp_id = int(i)
+        #                 n, listed, msg = process_monsters(temp_id, n, listed, msg)
 
-            # create Monster Table
-            if n > 0:
-                create_post(post, msg, post_type, 'MONSTER TABLE')
+        #     # create Monster Table
+        #     if n > 0:
+        #         create_post(post, msg, post_type, 'MONSTER TABLE')
 
         # check for Flair Call
         m = re.search(pattern_flair_call, temp_text, re.I | re.U)
         if m or called is True or forced is True:
             msg = []
             if post.author_flair_text is not None:
-                msg.append("%s\nFound %s's flair: **%s**\n" % (intro, str(post.author), post.author_flair_text))
+                msg.append("Found %s's flair: **%s**\n" % (str(post.author), post.author_flair_text))
                 create_post(post, msg, post_type, 'FLAIR ID')
 
         # update processed posts list
@@ -323,7 +323,7 @@ def check_pm(msgs):
                     ignored_submissions.append(m.group(1))
                     log_msg("Ignoring posts under %s by %s's request" % (c.short_link, msg.author.name))
                     update_db(log_coll, stat_coll, 'IGNORE_PM', c.short_link, msg.author.name)
-                    temp_msg = "%s\nI am ignoring any new posts in this thread by OP/moderator's request! Please request this post to be deleted to un-ignore.\n" % intro
+                    temp_msg = "%s\nI am ignoring any new posts in this thread by OP/moderator's request! Please request this post to be deleted to un-ignore.\n" % signature_intro
                     create_post(c, [temp_msg], 'SUBMISSIONS', 'IGNORE_POST')
             else:
                 if type(c) is praw.objects.Submission:
@@ -386,7 +386,7 @@ def create_post(post, msg, post_type, msg_type):
                 if debug:
                     print m + signature
                 else:
-                    c = post.add_comment(m + signature)
+                    c = post.add_comment(m + signature_intro + signature)
                     log_msg("Made a %s comment in %s" % (msg_type, post.short_link))
                     update_db(log_coll, stat_coll, msg_type, post.short_link, '')
             elif post_type == 'COMMENTS':
