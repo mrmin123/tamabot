@@ -228,32 +228,32 @@ def check_posts(posts, post_type, forced):
         if temp_text.find('-/u/tamabot') > -1:
             log_msg('Found negative callout')
             pass
-        if temp_text.find('/u/tamabot') > -1:
+        elif temp_text.find('/u/tamabot') > -1:
             log_msg('Found callout request!')
             called = True
 
-        # check for Monster Icons
-        if called is True or forced is True:
-            n, temp_id, msg, listed = 0, 0, [], []
-            for m in pattern_icon.finditer(temp_text):
-                e = m.groupdict()
-                if e['id'] is not None:
-                    temp_id = int(e['id'])
-                elif e['sid'] is not None and e['cid'] is not None:
-                    temp_id = (int(e['sid'][1:]) * 50) + int(e['cid'][1:]) + 1
-                n, listed, msg = process_monsters(temp_id, n, listed, msg)
+        # check for Monster Icons - disabled
+        # if called is True or forced is True:
+        #     n, temp_id, msg, listed = 0, 0, [], []
+        #     for m in pattern_icon.finditer(temp_text):
+        #         e = m.groupdict()
+        #         if e['id'] is not None:
+        #             temp_id = int(e['id'])
+        #         elif e['sid'] is not None and e['cid'] is not None:
+        #             temp_id = (int(e['sid'][1:]) * 50) + int(e['cid'][1:]) + 1
+        #         n, listed, msg = process_monsters(temp_id, n, listed, msg)
 
-            # check for PADX Team
-            m = re.findall(pattern_padxsim, temp_text, re.I | re.U)
-            if m:
-                for e in m:
-                    for i in e:
-                        temp_id = int(i)
-                        n, listed, msg = process_monsters(temp_id, n, listed, msg)
+        #     # check for PADX Team
+        #     m = re.findall(pattern_padxsim, temp_text, re.I | re.U)
+        #     if m:
+        #         for e in m:
+        #             for i in e:
+        #                 temp_id = int(i)
+        #                 n, listed, msg = process_monsters(temp_id, n, listed, msg)
 
-            # create Monster Table
-            if n > 0:
-                create_post(post, msg, post_type, 'MONSTER TABLE')
+        #     # create Monster Table
+        #     if n > 0:
+        #         create_post(post, msg, post_type, 'MONSTER TABLE')
 
         # check for Flair Call
         m = re.search(pattern_flair_call, temp_text, re.I | re.U)
