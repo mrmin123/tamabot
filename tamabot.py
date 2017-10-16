@@ -33,8 +33,8 @@ processed_comments_file = 'processed_comments.txt'
 ignored_submissions = deque([])
 ignored_submissions_file = 'ignored_submissions.txt'
 signature_intro = "\n^^I ^^post ^^user ^^flairs! ^^Mention ^^'/u/tamabot/' ^^to ^^call ^^me, ^^or ^^'-/u/tamabot' ^^to ^^make ^^me ^^ignore ^^your ^^post.\n"
-signature = "\n&nbsp;\n\n^^Processing... ^^|| ^^[Homepage](http://minyoung.ch/tamabot/) || ^^[Github](https://github.com/mrmin123/tamabot/)"
-signature_add = "^^Parent ^^commentor ^^can [^^delete ^^this ^^post](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___CID___), ^^and ^^OP ^^can ^^tell ^^bot ^^to [^^ignore ^^this ^^entire ^^thread](/message/compose?to=tamabot&subject=tamabot%20ignore&message=%2Bignore+___PID___)"
+signature = "\n&nbsp;\n\n^^Processing... ^^|| ^^[Homepage](http://minyoung.ch/tamabot/) ^^|| ^^[Github](https://github.com/mrmin123/tamabot/)"
+signature_add = "^^Parent ^^commentor ^^can [^^delete ^^this ^^post](/message/compose?to=tamabot&subject=tamabot%20deletion&message=%2Bdelete+___CID___)^^, ^^and ^^OP ^^can ^^tell ^^bot ^^to [^^ignore ^^this ^^entire ^^thread](/message/compose?to=tamabot&subject=tamabot%20ignore&message=%2Bignore+___PID___)"
 pattern_icon = re.compile('\[.*?]\((?:#m)?(?:#i)?\/?(?P<sid>s\d+)?\/?(?P<cid>c\d+)?\/(?P<id>\d+)?( "[^"]+?")?\)')
 pattern_padxsim = ur'puzzledragonx\.com/[^/]+/simulator.asp\?q=([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\.([\d]+)\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+'
 pattern_flair_call = ur'id (?:is )?(?:in )?(?:my )?(flair|flare)'
