@@ -384,16 +384,16 @@ def create_post(post, msg, post_type, msg_type):
                 m = m.replace('___MTABLE___', "")
             if post_type == 'SUBMISSIONS':
                 if debug:
-                    print m + signature
+                    print m + signature_intro + signature
                 else:
                     c = post.add_comment(m + signature_intro + signature)
                     log_msg("Made a %s comment in %s" % (msg_type, post.short_link))
                     update_db(log_coll, stat_coll, msg_type, post.short_link, '')
             elif post_type == 'COMMENTS':
                 if debug:
-                    print m + signature
+                    print m + signature_intro + signature
                 else:
-                    c = post.reply(m + signature)
+                    c = post.reply(m + signature_intro + signature)
                     log_msg("Made a %s reply to %s" % (msg_type, post.permalink))
                     update_db(log_coll, stat_coll, msg_type, post.permalink, '')
             sig_temp = signature_add.replace('___CID___', str(c.id))
